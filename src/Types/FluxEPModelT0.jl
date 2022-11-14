@@ -12,6 +12,7 @@ Base.@kwdef struct FluxEPModelT0 <: AbstractFluxEPModel
     be::Union{Nothing, Vector{Float64}} = nothing
     # unsorted permutation (see echelonize)
     idxmap::Union{Nothing, Vector{Int}}  = nothing
+    idxmap_inv::Union{Nothing, Vector{Int}}  = nothing
 
     # ep fields
     betai::Union{Nothing, Vector{Float64}} = nothing
@@ -78,10 +79,7 @@ function FluxEPModelT0(
     # idxmap ci is the inverse permutation that sends me back to the original model rxn order
     _, _, idxmap, IG, be = echelonize(S, b)
     Mech, Nech = size(IG)
-    # @show size(IG)
-    # @show IG
     Nd, Ni = Mech, Nech - Mech
-    # @show Nd, Ni
     Id, Ii = 1:Nd, (Nd+1):Nech
     @assert length(Id) == Nd && length(Ii) == Ni
     length(be) == Nd || error("vector size incompatible with matrix") 
@@ -131,7 +129,8 @@ function FluxEPModelT0(
         betai .= beta[idxmap[Ii]]
     end
 
-    return FluxEPModelT0(;Σd, Σi, G, vd, vi, be, idxmap, betai, betad, avi, avd, vai, vad, μi, μd, si, sd, ai, ad, di, dd, lbi, lbd, ubi, ubd, scalefact, siteflagave_i, siteflagave_d, siteflagvar_i, siteflagvar_d)
+    idxmap_inv = sortperm(idxmap)
+    return FluxEPModelT0(;Σd, Σi, G, vd, vi, be, idxmap, idxmap_inv, betai, betad, avi, avd, vai, vad, μi, μd, si, sd, ai, ad, di, dd, lbi, lbd, ubi, ubd, scalefact, siteflagave_i, siteflagave_d, siteflagvar_i, siteflagvar_d)
 end
 
 
@@ -147,7 +146,8 @@ function FluxEPModelT0(net::MetNet;
     net0 = extract_fields(net, netfields)
     net0 = netcopy ? deepcopy(net0) : net0
     net1 = MetNet(; net0...)
-    metnet!(epm, reindex(net1; rxn_idxs = epm.idxmap))
+    # metnet!(epm, reindex(net1; rxn_idxs = epm.idxmap))
+    metnet!(epm, net1)
 
     # default config
     config!(epm, :verbose, false)

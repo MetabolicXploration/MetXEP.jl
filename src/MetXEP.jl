@@ -11,6 +11,7 @@ module MetXEP
     using ProgressMeter
     using LinearAlgebra
     using LinearAlgebra: inv!
+    using Statistics
     
     import Printf: @printf
     import ExtractMacro: @extract
@@ -40,6 +41,7 @@ module MetXEP
 
     #! include FluxEPModelT0
     include("FluxEPModelT0/eponesweep_T0.jl")
+    include("FluxEPModelT0/interfaces.jl")
 
     #! include .
 

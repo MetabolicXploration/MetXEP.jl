@@ -18,7 +18,6 @@ function converge!(epm::AbstractFluxEPModel;
     verbose = config(epm, :verbose, verbose)
     damp = config(epm, :damp, damp)
     epsconv = config(epm, :epsconv, epsconv)
-    @show epsconv
     maxiter = config(epm, :maxiter, maxiter)
     maxvar = config(epm, :maxvar, maxvar)
     minvar = config(epm, :minvar, minvar)
@@ -26,7 +25,7 @@ function converge!(epm::AbstractFluxEPModel;
     iter0 = config(epm, :iter0, iter0)
     iter = iter0
     state!(epm, :iter, iter)
-    state!(epm, :status, UNSET_STATUS)
+    state!(epm, :status, UNCONVERGED_STATUS)
     state!(epm, :converge_init_time, time())
     
     # sweep ep till maxiter is reached or max(errav, errvar) < epsconv
@@ -39,14 +38,14 @@ function converge!(epm::AbstractFluxEPModel;
         end
         
         max_err = maximum(errs)
-        config!(epm; elapsed_eponesweep, max_err)
+        state!(epm; elapsed_eponesweep, max_err)
 
         # call back
         retflag = MetXBase.run_callbacks(oniter, epm)
         retflag === true && return epm
 
         # Converged
-        max_err < epsconv && (config!(epm, :status, CONVERGED_STATUS); break)
+        max_err < epsconv && (state!(epm, :status, CONVERGED_STATUS); break)
 
         if verbose 
             sweep_time = state(epm, :elapsed_eponesweep, 0)
