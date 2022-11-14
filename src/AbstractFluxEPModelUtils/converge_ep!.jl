@@ -18,6 +18,7 @@ function converge!(epm::AbstractFluxEPModel;
     verbose = config(epm, :verbose, verbose)
     damp = config(epm, :damp, damp)
     epsconv = config(epm, :epsconv, epsconv)
+    @show epsconv
     maxiter = config(epm, :maxiter, maxiter)
     maxvar = config(epm, :maxvar, maxvar)
     minvar = config(epm, :minvar, minvar)

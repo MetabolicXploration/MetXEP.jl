@@ -78,27 +78,31 @@ function FluxEPModelT0(
     # idxmap ci is the inverse permutation that sends me back to the original model rxn order
     _, _, idxmap, IG, be = echelonize(S, b)
     Mech, Nech = size(IG)
-    Ni, Nd = Mech, Nech - Mech
-    Ii, Id = 1:Ni, (Ni+1):Nech
-    length(be) == Ni || error("vector size incompatible with matrix") 
-    Σi, Σd = zeros(T, Ni, Ni), zeros(T, Nd, Nd)
-    G = IG[:, Id]
-    vi, vd = zeros(T, Ni), zeros(T, Nd)
-    lbi, lbd = lb[idxmap[Ii]], lb[idxmap[Id]]
-    ubi, ubd = ub[idxmap[Ii]], ub[idxmap[Id]]
+    # @show size(IG)
+    # @show IG
+    Nd, Ni = Mech, Nech - Mech
+    # @show Nd, Ni
+    Id, Ii = 1:Nd, (Nd+1):Nech
+    @assert length(Id) == Nd && length(Ii) == Ni
+    length(be) == Nd || error("vector size incompatible with matrix") 
+    Σd, Σi = zeros(T, Nd, Nd), zeros(T, Ni, Ni)
+    G = IG[:, Ii]
+    vd, vi = zeros(T, Nd), zeros(T, Ni)
+    lbd, lbi = lb[idxmap[Id]], lb[idxmap[Ii]]
+    ubd, ubi = ub[idxmap[Id]], ub[idxmap[Ii]]
 
     # ep fields
-    avi, avd = zeros(T, Ni), zeros(T, Nd)
-    vai, vad = zeros(T, Ni), zeros(T, Nd)
-    μi, μd = zeros(T, Ni), zeros(T, Nd)
-    si, sd = ones(T, Ni), ones(T, Nd)
-    ai, ad = zeros(T, Ni), zeros(T, Nd)
-    di, dd = ones(T, Ni), ones(T, Nd)
+    avd, avi = zeros(T, Nd), zeros(T, Ni)
+    vad, vai = zeros(T, Nd), zeros(T, Ni)
+    μd, μi = zeros(T, Nd), zeros(T, Ni)
+    sd, si = ones(T, Nd), ones(T, Ni)
+    ad, ai = zeros(T, Nd), zeros(T, Ni)
+    dd, di = ones(T, Nd), ones(T, Ni)
 
     # expval
     # TODO: implement fixing var and ave (play with idxmap)
-    siteflagvar_i, siteflagvar_d = trues(Ni), trues(Nd)
-    siteflagave_i, siteflagave_d = trues(Ni), trues(Nd)
+    siteflagvar_d, siteflagvar_i = trues(Nd), trues(Ni)
+    siteflagave_d, siteflagave_i = trues(Nd), trues(Ni)
     
     # expave, expvar = parseexpval!(expval, siteflagave, siteflagvar)
     # for (k,v) in expave
@@ -112,19 +116,19 @@ function FluxEPModelT0(
     # the maximum absolute bound (lb or ub).
     scalefact = max(maximum(abs, lb), maximum(abs, ub))
     scalefact_inv = inv(scalefact)
-    rmul!(μi, scalefact_inv); rmul!(μd, scalefact_inv)
-    rmul!(si, scalefact_inv^2); rmul!(sd, scalefact_inv^2)
-    rmul!(avi, scalefact_inv); rmul!(avd, scalefact_inv)
-    rmul!(vai, scalefact_inv^2); rmul!(vad, scalefact_inv^2)
-    rmul!(lb, scalefact_inv); rmul!(ub, scalefact_inv);
+    rmul!(μd, scalefact_inv); rmul!(μi, scalefact_inv)
+    rmul!(sd, scalefact_inv^2); rmul!(si, scalefact_inv^2)
+    rmul!(avd, scalefact_inv); rmul!(avi, scalefact_inv)
+    rmul!(vad, scalefact_inv^2); rmul!(vai, scalefact_inv^2)
+    rmul!(lbd, scalefact_inv); rmul!(lbi, scalefact_inv);
+    rmul!(ubd, scalefact_inv); rmul!(ubi, scalefact_inv);
     rmul!(be, scalefact_inv)
 
     # prepare beta
-    betai = spzeros(T, Ni)
-    betad = spzeros(T, Nd)
+    betad, betai = spzeros(T, Nd), spzeros(T, Ni)
     if !isempty(beta) 
-        betai .= beta[idxmap[Ii]]
         betad .= beta[idxmap[Id]]
+        betai .= beta[idxmap[Ii]]
     end
 
     return FluxEPModelT0(;Σd, Σi, G, vd, vi, be, idxmap, betai, betad, avi, avd, vai, vad, μi, μd, si, sd, ai, ad, di, dd, lbi, lbd, ubi, ubd, scalefact, siteflagave_i, siteflagave_d, siteflagvar_i, siteflagvar_d)
