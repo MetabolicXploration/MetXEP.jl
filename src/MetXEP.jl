@@ -18,45 +18,43 @@ module MetXEP
     import Distributions: Truncated, Normal, mean, var, MvNormal
 
     #! include Types
-    include("Types/AbstractEPMat.jl")
-    include("Types/AbstractEPModel.jl")
-    include("Types/EPAlgs.jl")
-    include("Types/EPFields.jl")
-    include("Types/EPMat.jl")
-    include("Types/EPMatT0.jl")
-    include("Types/EPOut.jl")
-    include("Types/FluxEPModel.jl")
+    include("Types/AbstractFluxEPModel.jl")
+    include("Types/FluxEPModelT0.jl")
         
     #! include Utils
     include("Utils/summary.jl")
     include("Utils/trunc_sample.jl")
+    include("Utils/utils.jl")
     
-    #! include EP
-    include("EP/Q_sigma.jl")
-    include("EP/compute_mom5d.jl")
-    include("EP/converge_ep!.jl")
-    include("EP/epconverge.jl")
-    include("EP/eponesweep.jl")
-    include("EP/eponesweepT0.jl")
-    include("EP/fast_maxent_ep.jl")
-    include("EP/get_join.jl")
-    include("EP/get_scalefactor.jl")
-    include("EP/matchmom.jl")
-    include("EP/maxent_ep.jl")
-    include("EP/newav.jl")
-    include("EP/newμs.jl")
-    include("EP/parseexpval.jl")
-    include("EP/prepare_beta_vec.jl")
-    include("EP/prepareinput.jl")
-    include("EP/produce_epout.jl")
-    include("EP/scaleepfield.jl")
-    include("EP/status.jl")
-    include("EP/toy_maxent_ep.jl")
-    include("EP/utils.jl")
+    # #! include EPBase
+    # include("EPBase/Q_sigma.jl")
+    # include("EPBase/compute_mom5d.jl")
+    # include("EPBase/converge_ep!.jl")
+    # include("EPBase/epconverge.jl")
+    # include("EPBase/eponesweep_T0.jl")
+    # include("EPBase/eponesweep_relaxed.jl")
+    # include("EPBase/fast_maxent_ep.jl")
+    # include("EPBase/get_join.jl")
+    # include("EPBase/get_scalefactor.jl")
+    # include("EPBase/matchmom.jl")
+    # include("EPBase/maxent_ep.jl")
+    # include("EPBase/newav.jl")
+    # include("EPBase/newμs.jl")
+    # include("EPBase/prepare_beta_vec.jl")
+    # include("EPBase/prepareinput.jl")
+    # include("EPBase/produce_epout.jl")
+    # include("EPBase/scaleepfield.jl")
+    # include("EPBase/toy_maxent_ep.jl")
+    # include("EPBase/utils.jl")
     
-    #! include FluxEPModelUtils
-    include("FluxEPModelUtils/base.jl")
-    include("FluxEPModelUtils/interfaces.jl")
+    #! include AbstractFluxEPModelUtils
+    include("AbstractFluxEPModelUtils/base.jl")
+    include("AbstractFluxEPModelUtils/converge_ep!.jl")
+    include("AbstractFluxEPModelUtils/interfaces.jl")
+    include("AbstractFluxEPModelUtils/status.jl")
+
+    #! include FluxEPModelT0
+    include("FluxEPModelT0/eponesweep_T0.jl")
 
     #! include .
 

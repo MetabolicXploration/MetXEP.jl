@@ -1,40 +1,43 @@
 # Code derived from metabolicEP (https://github.com/anna-pa-m/Metabolic-EP)
 
-function eponesweepT0!(epfields::EPFields, epalg::EPAlg, epmatT0::EPMatT0, stat = Dict())
+function eponesweep!(epm::FluxEPModelT0)
 
-    @extract epfields : av va a d μ s siteflagave siteflagvar
-    @extract epalg : alpha beta_vec minvar maxvar epsconv damp
-    @extract epmatT0 : Σd Σi G lb ub vd vi Y
+    # dep an ind prior mean (epfields)
+    # dep an ind prior variance (epfields)
+    # dep and ind truncated gaussian-part marginals variance 
+    # dep and ind truncated gaussian-part marginals mean 
+    # dep and ind truncated marginals mean (epfields)
+    # dep and ind truncated marginals mean (epfields)
+    # dep and ind truncated marginals variance (epfields)
 
+    @extract epm: G 
+    @extract epm: ad ai dd di 
+    @extract epm: μd μi sd si 
+    @extract epm: avd avi vai vad
+    @extract epm: betad betai
+    @extract epm: siteflagave_i siteflagave_d
+    @extract epm: siteflagvar_i siteflagvar_d
+    
+    @extract epm: vd vi Σd Σi
+    @extract epm: lbd lbi ubd ubi be
 
-    M = size(G,1)
-    N = length(av)
-
-    idxy = 1:M # dependent variables
-    idxw = M+1:N # independent variables
-
-    ad,ai = view(a,idxy), view(a,idxw)     # dep an ind prior mean (epfields)
-    dd,di = view(d,idxy), view(d,idxw)     # dep an ind prior variance (epfields)
-    sd,si = view(s,idxy), view(s,idxw)     # dep and ind untruncated marginals variance (epfields)
-    μd,μi = view(μ,idxy), view(μ,idxw)     # dep and ind untruncated marginals mean (epfields)
-    avd,avi = view(av,idxy), view(av,idxw) # dep and ind truncated marginals mean (epfields)
-    vad,vai = view(va,idxy), view(va,idxw) # dep and ind truncated marginals variance (epfields)
-    βd, βi = view(beta_vec, idxy), view(beta_vec, idxw)
-    errav, errva, errμ, errs = fill(typemin(eltype(av)), 4)
+    M, N = size(G)
+    errav, errva, errμ, errs = fill(typemin(eltype(G)), 4)
     Gt = G'
-
-    # Test
-    # @show sum(beta_vec)  
     
     # All fields in epmat are updated from the epfields of last sweep
     # (?) covariance matrix of independent variables (epmat)
-    stat[:elapsed_eponesweep_inv] = @elapsed begin
+    elapsed_eponesweep_inv = @elapsed begin
         Di = Diagonal(inv.(di))
         Dd = Diagonal(inv.(dd))
+        @show Dd
         # Σi = inv(Σᵢ⁻¹)
-        Σᵢ⁻¹ = Gt * Dd * G + Di
+        # Σᵢ⁻¹ = Gt * Dd * G + Di
+        Σᵢ⁻¹ = Gt * Di * G + Dd
+        @show Σᵢ⁻¹
         inplaceinverse!(Σi, Σᵢ⁻¹)
     end
+    state!(epm; elapsed_eponesweep_inv)
     # fast_similarity_inv!(Σi, di, dd, G)
     mul!(Σd, G*Σi, Gt) # (?) covariance matrix of dependent variables (epmat)
     # Original ep
@@ -45,6 +48,8 @@ function eponesweepT0!(epfields::EPFields, epalg::EPAlg, epmatT0::EPMatT0, stat 
     # vd = -Gvi + b'
     mul!(vd, G, vi) # (?) mean vector of dependent variables (epmat)
     vd .= Y - vd
+
+    return errav, errva, errμ, errs = rand(4)
 
     for i in eachindex(μi)  # loop M+1:N
         newμi,newsi = newμs(Σi[i,i], ai[i], di[i], vi[i], lb[i+M], ub[i+M], minvar, maxvar)
