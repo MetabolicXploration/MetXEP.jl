@@ -10,6 +10,7 @@ Base.@kwdef struct FluxEPModelT0 <: AbstractFluxEPModel
     vd::Union{Nothing, Vector{Float64}} = nothing
     vi::Union{Nothing, Vector{Float64}} = nothing
     be::Union{Nothing, Vector{Float64}} = nothing
+    basis::Union{Nothing, Matrix{Float64}} = nothing
     # unsorted permutation (see echelonize)
     idxmap::Union{Nothing, Vector{Int}}  = nothing
     idxmap_inv::Union{Nothing, Vector{Int}}  = nothing
@@ -77,14 +78,14 @@ function FluxEPModelT0(
     # echelonize
     S = S isa DenseMatrix ? S : Matrix(S)
     # idxmap ci is the inverse permutation that sends me back to the original model rxn order
-    _, _, idxmap, IG, be = echelonize(S, b)
-    Mech, Nech = size(IG)
+    idxf, idxd, idxmap, G, be = echelonize(S, b)
+    Mech = size(G, 1)
+    Nech = sum(size(G))
     Nd, Ni = Mech, Nech - Mech
     Id, Ii = 1:Nd, (Nd+1):Nech
     @assert length(Id) == Nd && length(Ii) == Ni
     length(be) == Nd || error("vector size incompatible with matrix") 
     Σd, Σi = zeros(T, Nd, Nd), zeros(T, Ni, Ni)
-    G = IG[:, Ii]
     vd, vi = zeros(T, Nd), zeros(T, Ni)
     lbd, lbi = lb[idxmap[Id]], lb[idxmap[Ii]]
     ubd, ubi = ub[idxmap[Id]], ub[idxmap[Ii]]
@@ -95,7 +96,10 @@ function FluxEPModelT0(
     μd, μi = zeros(T, Nd), zeros(T, Ni)
     sd, si = ones(T, Nd), ones(T, Ni)
     ad, ai = zeros(T, Nd), zeros(T, Ni)
-    dd, di = ones(T, Nd), ones(T, Ni)
+    max_λ = (sqrt(eigmax(G * G')) + 0.5)
+    dd, di = ones(T, Nd) .* max_λ, ones(T, Ni) .* max_λ
+    
+    
 
     # expval
     # TODO: implement fixing var and ave (play with idxmap)
@@ -130,7 +134,9 @@ function FluxEPModelT0(
     end
 
     idxmap_inv = sortperm(idxmap)
-    return FluxEPModelT0(;Σd, Σi, G, vd, vi, be, idxmap, idxmap_inv, betai, betad, avi, avd, vai, vad, μi, μd, si, sd, ai, ad, di, dd, lbi, lbd, ubi, ubd, scalefact, siteflagave_i, siteflagave_d, siteflagvar_i, siteflagvar_d)
+    basis = basis_mat(G, idxf, idxd)
+    
+    return FluxEPModelT0(;Σd, Σi, G, vd, vi, be, basis, idxmap, idxmap_inv, betai, betad, avi, avd, vai, vad, μi, μd, si, sd, ai, ad, di, dd, lbi, lbd, ubi, ubd, scalefact, siteflagave_i, siteflagave_d, siteflagvar_i, siteflagvar_d)
 end
 
 
