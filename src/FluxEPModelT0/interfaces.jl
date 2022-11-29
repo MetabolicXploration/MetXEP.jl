@@ -2,6 +2,16 @@
 # ep
 export beta
 beta(epm::FluxEPModelT0) = [epm.betad; epm.betai][epm.idxmap_inv]
+function beta(epm::FluxEPModelT0, idxs) 
+    idxs = rxnindex(epm, idxs)
+    if length(idxs) == 1
+        Nd = length(epm.betad)
+        idx = epm.idxmap_inv[idxs]
+        return idx <= Nd ? epm.betad[idx] : epm.betai[idx - Nd]
+    end
+    return beta(epm)[idxs]
+end
+
 export beta!
 function beta!(epm::FluxEPModelT0, v::Vector) 
     v1 = view(v, epm.idxmap)

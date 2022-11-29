@@ -2,7 +2,17 @@
 
 function inplaceinverse!(dest::AbstractArray, source::AbstractArray)
     copyto!(dest, source)
-    inv!(cholesky!(Hermitian(dest)))
+    try
+        inv!(cholesky!(Hermitian(dest)))
+    catch err
+        if err isa PosDefException
+            nearPD!(dest, 1e-10) # TODO: interface δ
+            @show isposdef(dest)
+            inv!(cholesky!(Hermitian(dest)))
+            return 
+        end
+        rethrow(err)
+    end
 end
 
 Φ(x) = 0.5*(1.0+erf(x/sqrt(2.0)))

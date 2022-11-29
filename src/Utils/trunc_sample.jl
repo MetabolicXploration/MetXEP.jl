@@ -1,6 +1,6 @@
 ## ----------------------------------------------------------------------------------
-_unbig(x) = round(Float64(x); digits = 15)
-function tnorm_sample(μ::Number, σ::Number, lb::Number, ub::Number; 
+_unbig(x; digits = 15) = round(Float64(x); digits)
+function sample_tnorm(μ::Number, σ::Number, lb::Number, ub::Number; 
         xbins = 1000, digits = 15
     )
     

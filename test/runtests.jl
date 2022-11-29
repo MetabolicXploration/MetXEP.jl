@@ -115,8 +115,6 @@ const LIN_SOLVER = GLPK.Optimizer
             canvas = DotCanvas
         )
         println(p)
-
-
     end
 
 
