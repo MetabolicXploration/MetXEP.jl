@@ -37,7 +37,9 @@ function beta!(epm::FluxEPModelT0, idxs, val)
 end
 
 ## ------------------------------------------------------------------
-# Distribution
+# TODO: optimize this, do not create vector unnecessarily 
+
+# Truncated Distribution
 import Statistics.mean
 export mean
 function mean(epm::FluxEPModelT0)
@@ -51,9 +53,50 @@ mean(epm::FluxEPModelT0, idxs) = _mean(epm, idxs)
 
 import Statistics.var
 export var
+
 function var(epm::FluxEPModelT0)
     va = [epm.vad; epm.vai]
-    rmul!(va, epm.scalefact); 
+    rmul!(va, epm.scalefact^2); 
     return va[epm.idxmap_inv]
 end
 var(epm::FluxEPModelT0, idxs) = var(epm)[rxnindex(epm, idxs)]
+
+## ------------------------------------------------------------------
+# untruncated
+
+export untruncated_mean
+function untruncated_mean(epm::FluxEPModelT0)
+    μ = [epm.μd; epm.μi]
+    rmul!(μ, epm.scalefact)
+    return μ[epm.idxmap_inv] 
+end
+untruncated_mean(epm::FluxEPModelT0, idxs) = untruncated_mean(epm)[rxnindex(epm, idxs)]
+
+# TODO: check that scaling is ok
+export untruncated_var
+function untruncated_var(epm::FluxEPModelT0)
+    s = [epm.sd; epm.si]
+    rmul!(s, epm.scalefact^2); 
+    return s[epm.idxmap_inv]
+end
+untruncated_var(epm::FluxEPModelT0, idxs) = untruncated_var(epm)[rxnindex(epm, idxs)]
+
+## -----
+# MetNet
+import MetXBase.lb
+export lb
+function lb(epm::FluxEPModelT0)
+    _lb = [epm.lbd; epm.lbi]
+    rmul!(_lb, epm.scalefact); 
+    return _lb[epm.idxmap_inv]
+end
+lb(epm::FluxEPModelT0, idxs) = lb(epm)[rxnindex(epm, idxs)]
+
+import MetXBase.ub
+export ub
+function ub(epm::FluxEPModelT0)
+    _ub = [epm.ubd; epm.ubi]
+    rmul!(_ub, epm.scalefact); 
+    return _ub[epm.idxmap_inv]
+end
+ub(epm::FluxEPModelT0, idxs) = ub(epm)[rxnindex(epm, idxs)]

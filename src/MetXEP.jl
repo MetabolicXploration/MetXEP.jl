@@ -25,11 +25,9 @@ module MetXEP
         
     #! include Utils
     include("Utils/summary.jl")
-    include("Utils/trunc_sample.jl")
     include("Utils/utils.jl")
     
     #! include EPBase
-    include("EPBase/Q_sigma.jl")
     include("EPBase/compute_mom5d.jl")
     include("EPBase/epconverge.jl")
     include("EPBase/eponesweep_relaxed.jl")
