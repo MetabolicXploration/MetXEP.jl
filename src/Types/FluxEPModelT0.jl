@@ -1,42 +1,42 @@
 ## ------------------------------------------------------------------------------
 # A model for optimizing over the space of flux configurations
 export FluxEPModelT0
-Base.@kwdef struct FluxEPModelT0 <: AbstractFluxEPModel
+Base.@kwdef struct FluxEPModelT0{T} <: AbstractFluxEPModel where {T<:AbstractFloat}
 
     # T0
-    Σd::Union{Nothing, Matrix{Float64}} = nothing
-    Σi::Union{Nothing, Matrix{Float64}} = nothing
-    G::Union{Nothing, Matrix{Float64}} = nothing
-    vd::Union{Nothing, Vector{Float64}} = nothing
-    vi::Union{Nothing, Vector{Float64}} = nothing
-    be::Union{Nothing, Vector{Float64}} = nothing
-    basis::Union{Nothing, Matrix{Float64}} = nothing
+    Σd::Union{Nothing, Matrix{T}} = nothing
+    Σi::Union{Nothing, Matrix{T}} = nothing
+    G::Union{Nothing, Matrix{T}} = nothing
+    vd::Union{Nothing, Vector{T}} = nothing
+    vi::Union{Nothing, Vector{T}} = nothing
+    be::Union{Nothing, Vector{T}} = nothing
+    basis::Union{Nothing, Matrix{T}} = nothing
     # unsorted permutation (see echelonize)
     idxmap::Union{Nothing, Vector{Int}}  = nothing
     idxmap_inv::Union{Nothing, Vector{Int}}  = nothing
 
     # ep fields
-    betai::Union{Nothing, Vector{Float64}} = nothing
-    betad::Union{Nothing, Vector{Float64}} = nothing
+    betai::Union{Nothing, Vector{T}} = nothing
+    betad::Union{Nothing, Vector{T}} = nothing
     
-    avi::Union{Nothing, Vector{Float64}} = nothing
-    avd::Union{Nothing, Vector{Float64}} = nothing
-    vai::Union{Nothing, Vector{Float64}} = nothing
-    vad::Union{Nothing, Vector{Float64}} = nothing
-    μi::Union{Nothing, Vector{Float64}} = nothing
-    μd::Union{Nothing, Vector{Float64}} = nothing
-    si::Union{Nothing, Vector{Float64}} = nothing
-    sd::Union{Nothing, Vector{Float64}} = nothing
-    ai::Union{Nothing, Vector{Float64}} = nothing
-    ad::Union{Nothing, Vector{Float64}} = nothing
-    di::Union{Nothing, Vector{Float64}} = nothing
-    dd::Union{Nothing, Vector{Float64}} = nothing
+    avi::Union{Nothing, Vector{T}} = nothing
+    avd::Union{Nothing, Vector{T}} = nothing
+    vai::Union{Nothing, Vector{T}} = nothing
+    vad::Union{Nothing, Vector{T}} = nothing
+    μi::Union{Nothing, Vector{T}} = nothing
+    μd::Union{Nothing, Vector{T}} = nothing
+    si::Union{Nothing, Vector{T}} = nothing
+    sd::Union{Nothing, Vector{T}} = nothing
+    ai::Union{Nothing, Vector{T}} = nothing
+    ad::Union{Nothing, Vector{T}} = nothing
+    di::Union{Nothing, Vector{T}} = nothing
+    dd::Union{Nothing, Vector{T}} = nothing
 
-    lbi::Union{Nothing, Vector{Float64}} = nothing
-    lbd::Union{Nothing, Vector{Float64}} = nothing
-    ubi::Union{Nothing, Vector{Float64}} = nothing
-    ubd::Union{Nothing, Vector{Float64}} = nothing
-    scalefact::Union{Nothing, Float64} = nothing
+    lbi::Union{Nothing, Vector{T}} = nothing
+    lbd::Union{Nothing, Vector{T}} = nothing
+    ubi::Union{Nothing, Vector{T}} = nothing
+    ubd::Union{Nothing, Vector{T}} = nothing
+    scalefact::Union{Nothing, T} = nothing
 
     siteflagave_i::Union{Nothing, BitArray{1}} = nothing
     siteflagave_d::Union{Nothing, BitArray{1}} = nothing
@@ -47,19 +47,6 @@ Base.@kwdef struct FluxEPModelT0 <: AbstractFluxEPModel
     extras::Dict = Dict()
 
 end
-
-# submodel
-function FluxEPModelT0(template::FluxEPModelT0; to_overwrite...)
-    dict = Dict{Symbol, Any}(to_overwrite)
-
-    for field in fieldnames(typeof(template))
-        haskey(dict, field) && continue # avoid use the template version
-        dict[field] = getfield(template, field)
-    end
-    
-    return FluxEPModelT0(;dict...)
-end
-
 
 # A struct that contain all the data required for converging ep
 function FluxEPModelT0(
@@ -135,7 +122,18 @@ function FluxEPModelT0(
     idxmap_inv = sortperm(idxmap)
     basis = basis_mat(G, idxf, idxd)
     
-    return FluxEPModelT0(;Σd, Σi, G, vd, vi, be, basis, idxmap, idxmap_inv, betai, betad, avi, avd, vai, vad, μi, μd, si, sd, ai, ad, di, dd, lbi, lbd, ubi, ubd, scalefact, siteflagave_i, siteflagave_d, siteflagvar_i, siteflagvar_d)
+    return FluxEPModelT0{T}(;
+        Σd, Σi, G, vd, vi, be, basis, 
+        idxmap, idxmap_inv, 
+        betai, betad, 
+        avi, avd, vai, vad, 
+        μi, μd, si, sd, 
+        ai, ad, di, dd, 
+        lbi, lbd, ubi, ubd, 
+        scalefact, 
+        siteflagave_i, siteflagave_d, 
+        siteflagvar_i, siteflagvar_d
+    )
 end
 
 
@@ -167,4 +165,16 @@ function FluxEPModelT0(net::MetNet;
     state!(epm, :status, UNSET_STATUS) 
 
     return epm
+end
+
+# submodel
+function FluxEPModelT0(template::FluxEPModelT0; to_overwrite...)
+    dict = Dict{Symbol, Any}(to_overwrite)
+
+    for field in fieldnames(typeof(template))
+        haskey(dict, field) && continue # avoid use the template version
+        dict[field] = getfield(template, field)
+    end
+    
+    return FluxEPModelT0(;dict...)
 end

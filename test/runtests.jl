@@ -12,11 +12,11 @@ const LIN_SOLVER = GLPK.Optimizer
 @testset "MetXEP.jl" begin
     
     ## ------------------------------------------------------------------
-    # Beta interface (indirectly test idxmap and ixdmap_inv)
+    # SETTER/GETTER interface (indirectly test idxmap and ixdmap_inv)
     let
         println()
         println("="^60)
-        println("BETA INTERFACE")
+        println("SETTER/GETTER INTERFACE")
         println("."^60)
         println()
         
@@ -31,6 +31,9 @@ const LIN_SOLVER = GLPK.Optimizer
             beta!(epm, rxn, 0)
             @test count(isone, beta(epm)) |> iszero
         end
+
+        @test isapprox(lb(epm), lb(net))
+        @test isapprox(ub(epm), ub(net))
 
         println()
     end
