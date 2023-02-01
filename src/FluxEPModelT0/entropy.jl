@@ -1,30 +1,30 @@
 import Distributions.entropy
 export entropy
+
+function _normal_entropy(Σ)
+    N = size(Σ,1);
+    L = _cholesky(Σ).L
+    N = size(Σ,1)
+    S = sum(log.(diag(L))) .+ 0.5 * N * log(2 * pi * exp(1))
+    return S
+end
+
 function entropy(epm::FluxEPModelT0)
-    
+    # TODO: check why S(Cov = basis * epm.Σi * basis') != S(Cov = epm.Σi)
     # basis * vi = v
-    basis = epm.basis
-    Cov = basis * epm.Σi * basis'
-    
-    N = size(Cov,1);
-    # this is just the entropy of a multivariate gaussian
-    L = cholesky(Cov).L;
-    S = sum(log.(diag(L))) + 0.5*N*log.(2*pi*exp(1));
-    return S 
+    # basis = epm.basis
+    # Cov = basis * epm.Σi * basis'
+    Cov = epm.Σi
+    return _normal_entropy(Cov)
 end
 
 export orthnorm_entropy
 function orthnorm_entropy(epm::FluxEPModelT0)
-    basis = epm.basis
     # basis * vi = v -> basis
-    ort_basis = mgrscho(basis)
+    basis = epm.basis
     Cov = basis * epm.Σi * basis'
+    ort_basis = mgrscho(basis)
     normΣ = ort_basis' * Cov * ort_basis
-    normΣ .= 0.5 * (normΣ + normΣ') # Correct Symetry
     
-    N = size(normΣ,1);
-    # this is just the entropy of a multivariate gaussian
-    L = cholesky(normΣ).L;
-    S = sum(log.(diag(L))) + 0.5*N*log.(2*pi*exp(1));
-    return S 
+    return _normal_entropy(normΣ)
 end

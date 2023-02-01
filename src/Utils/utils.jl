@@ -1,13 +1,13 @@
 # Code derived from metabolicEP (https://github.com/anna-pa-m/Metabolic-EP)
 
-function inplaceinverse!(dest::AbstractArray, source::AbstractArray)
+function inplaceinverse!(dest::AbstractArray, source::AbstractArray; δ = 1e-10)
     copyto!(dest, source)
     try
         inv!(cholesky!(Hermitian(dest)))
     catch err
         if err isa PosDefException
-            nearPD!(dest, 1e-10) # TODO: interface δ
-            @show isposdef(dest)
+            nearPD!(dest, δ)
+            # @show isposdef(dest)
             inv!(cholesky!(Hermitian(dest)))
             return 
         end

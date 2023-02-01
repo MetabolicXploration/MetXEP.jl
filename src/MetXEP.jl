@@ -13,7 +13,8 @@ module MetXEP
     using LinearAlgebra: inv!
     using Statistics
     
-    import MetXBase: _dense, basis_mat, mgrscho, nearPD!
+    import MetXBase: _dense, basis_mat, mgrscho
+    import MetXBase: nearPD!, _cholesky
     import Printf: @printf
     import ExtractMacro: @extract
     import SpecialFunctions: erf
