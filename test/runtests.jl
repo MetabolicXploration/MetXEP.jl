@@ -120,5 +120,48 @@ const LIN_SOLVER = GLPK.Optimizer
         println(p)
     end
 
+    ## ------------------------------------------------------------------
+    # FluxEPModelT0 Normal Join Parameters
+    let
+        model_id = "ecoli_core"
+        net = pull_net(model_id)
+        net = box(net, GLPK.Optimizer; eps = 1e-4)
+
+        epm = FluxEPModelT0(net)
+        config!(epm; 
+            damp = 0.90,
+            verbose = true,
+            epsconv = 1e-6, 
+            maxiter = Int(1e4)
+        )
+        converge!(epm)
+        @show convergence_status(epm)
+
+        # Join
+        G = epm.G
+        βi, βd = epm.betai, epm.betad
+        di, dd = epm.di, epm.dd
+        Di, Dd = Diagonal(inv.(di)), Diagonal(inv.(dd))
+        ai, ad = epm.ai, epm.ad
+        b = epm.be
+        vi, Σi = epm.vi, epm.Σi
+
+        Σi0inv = Di + G' * Dd * G
+        Σi0 = similar(Σi0inv)
+        MetXEP.inplaceinverse!(Σi0, Σi0inv)
+        @show isposdef(Σi)
+        @show isposdef(Σi0)
+        MetXBase.nearPD!(Σi0)
+
+        @show maximum(abs, vec(Σi .- Σi0))
+        @test isapprox(Σi, Σi0; rtol = 1e-2)
+        
+        vi0 = Σi0 * (G' * Dd * (b - ad) + Di * ai - G' * βd + βi)
+        @show maximum(abs, vec(vi .- vi0))
+        @test isapprox(vi, vi0; rtol = 1e-2)
+
+    end
+    
+
 
 end

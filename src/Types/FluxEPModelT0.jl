@@ -11,9 +11,11 @@ Base.@kwdef struct FluxEPModelT0{T} <: AbstractFluxEPModel where {T<:AbstractFlo
     vi::Union{Nothing, Vector{T}} = nothing
     be::Union{Nothing, Vector{T}} = nothing
     basis::Union{Nothing, Matrix{T}} = nothing
-    # unsorted permutation (see echelonize)
-    idxmap::Union{Nothing, Vector{Int}}  = nothing
-    idxmap_inv::Union{Nothing, Vector{Int}}  = nothing
+    # permutations (see echelonize)
+    idxi::Union{Nothing, Vector{Int}}  = nothing # Map from epmi -> neti
+    idxd::Union{Nothing, Vector{Int}}  = nothing # Map from epmd -> netd
+    idxmap::Union{Nothing, Vector{Int}}  = nothing # Map from epm -> net
+    idxmap_inv::Union{Nothing, Vector{Int}}  = nothing # Map from net -> epm
 
     # ep fields
     betai::Union{Nothing, Vector{T}} = nothing
@@ -65,17 +67,15 @@ function FluxEPModelT0(
     # echelonize
     S = S isa DenseMatrix ? S : Matrix(S)
     # idxmap ci is the inverse permutation that sends me back to the original model rxn order
-    idxf, idxd, idxmap, G, be = echelonize(S, b)
+    idxi, idxd, idxmap, G, be = echelonize(S, b)
     Mech = size(G, 1)
     Nech = sum(size(G))
     Nd, Ni = Mech, Nech - Mech
-    Id, Ii = 1:Nd, (Nd+1):Nech
-    @assert length(Id) == Nd && length(Ii) == Ni
     length(be) == Nd || error("vector size incompatible with matrix") 
     Σd, Σi = zeros(T, Nd, Nd), zeros(T, Ni, Ni)
     vd, vi = zeros(T, Nd), zeros(T, Ni)
-    lbd, lbi = lb[idxmap[Id]], lb[idxmap[Ii]]
-    ubd, ubi = ub[idxmap[Id]], ub[idxmap[Ii]]
+    lbd, lbi = lb[idxd], lb[idxi]
+    ubd, ubi = ub[idxd], ub[idxi]
 
     # ep fields
     avd, avi = zeros(T, Nd), zeros(T, Ni)
@@ -115,16 +115,16 @@ function FluxEPModelT0(
     # prepare beta
     betad, betai = spzeros(T, Nd), spzeros(T, Ni)
     if !isempty(beta) 
-        betad .= beta[idxmap[Id]]
-        betai .= beta[idxmap[Ii]]
+        betad .= beta[idxd]
+        betai .= beta[idxi]
     end
 
     idxmap_inv = sortperm(idxmap)
-    basis = basis_mat(G, idxf, idxd)
+    basis = basis_mat(G, idxi, idxd)
     
     return FluxEPModelT0{T}(;
         Σd, Σi, G, vd, vi, be, basis, 
-        idxmap, idxmap_inv, 
+        idxi, idxd, idxmap, idxmap_inv,
         betai, betad, 
         avi, avd, vai, vad, 
         μi, μd, si, sd, 

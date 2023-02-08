@@ -1,5 +1,6 @@
 # Code derived from metabolicEP (https://github.com/anna-pa-m/Metabolic-EP)
 
+# TODO: Move to MetXBase
 function inplaceinverse!(dest::AbstractArray, source::AbstractArray; δ = 1e-10)
     copyto!(dest, source)
     try

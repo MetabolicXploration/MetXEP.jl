@@ -1,5 +1,9 @@
 # Code derived from metabolicEP (https://github.com/anna-pa-m/Metabolic-EP)
 
+# TODO: recheck this code
+# This now it has being tested externally (output testing)
+# but it is lacking iternal tests
+
 function eponesweep!(epm::FluxEPModelT0)
 
     # dep an ind prior mean (epfields)

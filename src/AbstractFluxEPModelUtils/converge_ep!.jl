@@ -1,28 +1,19 @@
 export converge!
-function converge!(epm::AbstractFluxEPModel;
-        # config
-        verbose::Bool=true,  # output verbosity
-        # state
-        damp::Real=0.9,      # damp ∈ (0,1) newfield = damp * oldfield + (1-damp)* newfield
-        epsconv::Real=1e-6,  # convergence criterion
-        maxiter::Int=2000,   # maximum iteration count
-        maxvar::Real=1e50,   # maximum numerical variance
-        minvar::Real=1e-50,  # minimum numerical variance
-        iter0 = 1,           # the starting iteration count
+function converge!(epm::AbstractFluxEPModel; 
         # callbacks
         oniter = nothing
     )
 
     # TODO: move to defaults
     # config
-    verbose = config(epm, :verbose, verbose)
-    damp = config(epm, :damp, damp)
-    epsconv = config(epm, :epsconv, epsconv)
-    maxiter = config(epm, :maxiter, maxiter)
-    maxvar = config(epm, :maxvar, maxvar)
-    minvar = config(epm, :minvar, minvar)
+    verbose = config!!(epm, :verbose, false)    # output verbosity
+    damp = config!!(epm, :damp, 0.9)            # damp ∈ (0,1) newfield = damp * oldfield + (1-damp)* newfield
+    epsconv = config!!(epm, :epsconv, 1e-6)     # convergence criterion
+    maxiter = config!!(epm, :maxiter, 2000)     # maximum iteration count
+    maxvar = config!!(epm, :maxvar, 1e50)       # maximum numerical variance
+    minvar = config!!(epm, :minvar, 1e-50)      # minimum numerical variance
+    iter0 = config!!(epm, :iter0, 1)            # the starting iteration count
     
-    iter0 = config(epm, :iter0, iter0)
     iter = iter0
     state!(epm, :iter, iter)
     state!(epm, :status, UNCONVERGED_STATUS)

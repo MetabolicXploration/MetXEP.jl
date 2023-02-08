@@ -1,5 +1,6 @@
-module MetXEP
+# TODO: Creates a direct matrix interface to EP
 
+module MetXEP
     
     using Reexport
     
@@ -41,7 +42,6 @@ module MetXEP
     include("EPBase/newμs.jl")
     include("EPBase/parseexpval.jl")
     include("EPBase/prepareinput.jl")
-    include("EPBase/produce_epout.jl")
     include("EPBase/scaleepfield.jl")
     include("EPBase/toy_maxent_ep.jl")
     
@@ -52,9 +52,10 @@ module MetXEP
     include("AbstractFluxEPModelUtils/status.jl")
 
     #! include FluxEPModelT0
-    include("FluxEPModelT0/entropy.jl")
+    include("FluxEPModelT0/Distributions.jl")
     include("FluxEPModelT0/eponesweep_T0.jl")
     include("FluxEPModelT0/interfaces.jl")
+    include("FluxEPModelT0/span.jl")
 
     #! include .
 

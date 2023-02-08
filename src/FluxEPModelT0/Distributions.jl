@@ -1,3 +1,14 @@
+import Distributions.MultivariateNormal
+export MultivariateNormal
+function MultivariateNormal(epm::FluxEPModelT0)
+    vi = _dense(epm.vi)
+    Σi = _dense(epm.Σi)
+    return MultivariateNormal(
+        vi * epm.scalefact,
+        Σi * epm.scalefact^2
+    )
+end
+
 import Distributions.entropy
 export entropy
 

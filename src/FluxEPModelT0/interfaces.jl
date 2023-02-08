@@ -66,16 +66,15 @@ var(epm::FluxEPModelT0, idxs) = var(epm)[rxnindex(epm, idxs)]
 
 export untruncated_mean
 function untruncated_mean(epm::FluxEPModelT0)
-    μ = [epm.μd; epm.μi]
-    rmul!(μ, epm.scalefact)
-    return μ[epm.idxmap_inv] 
+    v = [epm.vd; epm.vi]
+    rmul!(v, epm.scalefact)
+    return v[epm.idxmap_inv] 
 end
 untruncated_mean(epm::FluxEPModelT0, idxs) = untruncated_mean(epm)[rxnindex(epm, idxs)]
 
-# TODO: check that scaling is ok
 export untruncated_var
 function untruncated_var(epm::FluxEPModelT0)
-    s = [epm.sd; epm.si]
+    s = [diag(epm.Σd); diag(epm.Σi)]
     rmul!(s, epm.scalefact^2); 
     return s[epm.idxmap_inv]
 end
