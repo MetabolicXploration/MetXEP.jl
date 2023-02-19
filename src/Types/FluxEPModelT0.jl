@@ -1,5 +1,6 @@
 ## ------------------------------------------------------------------------------
 # A model for optimizing over the space of flux configurations
+# A struct that contain all the data required for converging ep
 export FluxEPModelT0
 Base.@kwdef struct FluxEPModelT0{T} <: AbstractFluxEPModel where {T<:AbstractFloat}
 
@@ -50,12 +51,10 @@ Base.@kwdef struct FluxEPModelT0{T} <: AbstractFluxEPModel where {T<:AbstractFlo
 
 end
 
-# A struct that contain all the data required for converging ep
 function FluxEPModelT0(
         S::AbstractArray{T,2}, b::AbstractArray{T}, 
         lb::AbstractArray{T}, ub::AbstractArray{T};
         beta::AbstractVector{T} = spzeros(T, size(S, 2)),               # maxent inverse temperature vector
-        solution = nothing,                                             # seed a solution
         expval = nothing,                                               # fix posterior probability experimental values 
     ) where {T<:AbstractFloat}
 
@@ -121,6 +120,20 @@ function FluxEPModelT0(
 
     idxmap_inv = sortperm(idxmap)
     basis = basis_mat(G, idxi, idxd)
+
+    # compute Σi and vi, the parameters (of the independent variables) of the full gaussian Q
+    # TODO: check alloc performance
+    Gt = G'
+    Dd = Diagonal(inv.(dd))
+    Di = Diagonal(inv.(di))
+    Σi_inv = Di + Gt * Dd * G
+    inplaceinverse!(Σi, Σi_inv)
+    vi .= Σi * (Gt * Dd * (be - ad) + Di * ai - Gt * betad + betai)
+    
+    # Compute Σd and vd, the parameters (of the dependent variables) of the full gaussian Q
+    mul!(Σd, G * Σi, Gt) 
+    mul!(vd, G, vi)
+    vd .= be - vd
     
     return FluxEPModelT0{T}(;
         Σd, Σi, G, vd, vi, be, basis, 

@@ -6,14 +6,6 @@
 
 function eponesweep!(epm::FluxEPModelT0)
 
-    # dep an ind prior mean (epfields)
-    # dep an ind prior variance (epfields)
-    # dep and ind truncated gaussian-part marginals variance 
-    # dep and ind truncated gaussian-part marginals mean 
-    # dep and ind truncated marginals mean (epfields)
-    # dep and ind truncated marginals mean (epfields)
-    # dep and ind truncated marginals variance (epfields)
-
     @extract epm: G 
     @extract epm: ad ai dd di 
     @extract epm: μd μi sd si 
@@ -29,74 +21,78 @@ function eponesweep!(epm::FluxEPModelT0)
     maxvar = config(epm, :maxvar, 1e50)
     damp = config(epm, :damp, 0.9)
     
-    M, N = size(G)
     errav, errva, errμ, errs = fill(typemin(eltype(G)), 4)
-    Gt = G'
-    
-    # All fields in epmat are updated from the epfields of last sweep
-    # (?) covariance matrix of independent variables (epmat)
-    elapsed_eponesweep_inv = @elapsed begin
-        Di = Diagonal(inv.(di))
-        Dd = Diagonal(inv.(dd))
-        # Σi = inv(Σᵢ⁻¹)
-        # Σᵢ⁻¹ = Gt * Dd * G + Di
-        Σᵢ⁻¹ = Di + Gt * Dd * G
-        inplaceinverse!(Σi, Σᵢ⁻¹)
-    end
-    state!(epm; elapsed_eponesweep_inv)
-    # fast_similarity_inv!(Σi, di, dd, G)
-    mul!(Σd, G * Σi, Gt) # (?) covariance matrix of dependent variables (epmat)
-    # Original ep
-    # mul!(vi,Σi, ai ./ di - G'*(ad ./ dd)) # (?) mean vector of independent variables (epmat)
-    # ep-maxent
-    vi .= Σi * (Gt * Dd * (be - ad) + Di * ai - Gt * betad + betai)
 
-    # vd = -Gvi + b'
-    mul!(vd, G, vi) # (?) mean vector of dependent variables (epmat)
-    vd .= be - vd
-
+    # independent loop
     @inbounds for i in eachindex(μi)
+        # Update the marginal tilted Q^(n) parameters (μ, s) from the parameters of the join Q
         newμi, newsi = newμs(Σi[i,i], ai[i], di[i], vi[i], lbi[i], ubi[i], minvar, maxvar)
         errμ = max(errμ, abs(μi[i] - newμi))
         errs = max(errs, abs(si[i] - newsi))
         μi[i] = newμi
         si[i] = newsi
         
-        newavw, newvaw = newav(si[i], μi[i], avi[i], vai[i], 
+        # Update the marginal tilted Q^(n) moments (av, va)
+        newavi, newvai = newav(si[i], μi[i], avi[i], vai[i], 
             siteflagave_i[i], siteflagvar_i[i],
             lbi[i], ubi[i], minvar, maxvar
         )
-        errav = max(errav, abs(avi[i] - newavw))
-        errva = max(errva, abs(vai[i] - newvaw))
-        avi[i] = newavw
-        vai[i] = newvaw
+        errav = max(errav, abs(avi[i] - newavi))
+        errva = max(errva, abs(vai[i] - newvai))
+        avi[i] = newavi
+        vai[i] = newvai
 
-        newai,newdi = matchmom(μi[i], si[i], avi[i], vai[i], minvar, maxvar)
+        # Force moment matching between Q^(n) and Q by recomputing (a, d)
+        newai, newdi = matchmom(μi[i], si[i], avi[i], vai[i], minvar, maxvar)
         ai[i] = damp * ai[i] + (1.0 - damp) * newai # modify a in epfields
         di[i] = damp * di[i] + (1.0 - damp) * newdi # modify d in epfields
     end
 
+    # dependent loop
     @inbounds for i in eachindex(μd)   # loop  1:M
 
+        # Update the marginal tilted Q^(n) parameters (μi, si) from the parameters of the join Q
         newμd, newsd = newμs(Σd[i,i], ad[i], dd[i], vd[i], lbd[i], ubd[i], minvar, maxvar)
         errμ = max(errμ, abs(μd[i] - newμd))
         errs = max(errs, abs(sd[i] - newsd))
-        μd[i] = newμd # modify μ in epfields
-        sd[i] = newsd # modify s in epfields
+        μd[i] = newμd
+        sd[i] = newsd
 
-        newavy, newvay = newav(sd[i],μd[i],avd[i],vad[i],
+        # Update the marginal tilted Q^(n) moments (av, va)
+        newavd, newvad = newav(sd[i], μd[i], avd[i], vad[i],
             siteflagave_d[i], siteflagvar_d[i], 
             lbd[i], ubd[i], minvar, maxvar
         )
-        errav = max(errav, abs(avd[i] - newavy))
-        errva = max(errva, abs(vad[i] - newvay))
-        avd[i] = newavy # modify av in epfields
-        vad[i] = newvay # modify va in epfields
+        errav = max(errav, abs(avd[i] - newavd))
+        errva = max(errva, abs(vad[i] - newvad))
+        avd[i] = newavd
+        vad[i] = newvad
 
-        newad,newbd = matchmom(μd[i],sd[i],avd[i],vad[i],minvar,maxvar)
+        # Force moment matching between Q^(n) and Q by recomputing (a, d)
+        newad,newbd = matchmom(μd[i], sd[i], avd[i], vad[i], minvar, maxvar)
         ad[i] = damp * ad[i] + (1.0 - damp) * newad # modify a in epfields
         dd[i] = damp * dd[i] + (1.0 - damp) * newbd # modify d in epfields
     end
+
+    # Recompute join parameters
+    Gt = G'
+
+    # Compute Σi and vi, the parameters (of the independent variables) of the full gaussian Q
+    # TODO: check alloc performance
+    println("-"^50)
+    Dd = Diagonal(inv.(dd))
+    Di = Diagonal(inv.(di))
+    Σi_inv = Di + Gt * Dd * G
+    state!(epm, :elapsed_eponesweep_inv) do
+        return @elapsed inplaceinverse!(Σi, Σi_inv)
+    end
+    vi .= Σi * (Gt * Dd * (be - ad) + Di * ai - Gt * betad + betai)
+    
+    # Compute Σd and vd, the parameters (of the dependent variables) of the full gaussian Q
+    # mul!(Σd, G * Σi, Gt) 
+    mul!(Σd, G * Σi, Gt)
+    mul!(vd, G, vi)
+    vd .= be - vd
 
     return errav, errva, errμ, errs
 end

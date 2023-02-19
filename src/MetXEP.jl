@@ -1,4 +1,8 @@
-# TODO: Creates a direct matrix interface to EP
+# TODO: Creates a direct matrix interface to EP (LEP_EPModel, lineal estimation problem)
+
+# TODO
+# Make/documment common setting interface setter(model, ider, val)
+# make a fixxing-like setting interface
 
 module MetXEP
     

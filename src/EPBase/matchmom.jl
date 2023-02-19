@@ -3,6 +3,8 @@
 function matchmom(μ,s,av,va, minvar,maxvar)
     newb = clamp(inv(1.0/va - 1.0/s),minvar,maxvar)
     newa = av + newb*(av-μ)/s
-    isnan(newa) || isnan(newb) && @warn("a = $newa b = $newb")
+    if isnan(newa) || isnan(newb)
+        @warn("a = $newa b = $newb")
+    end
     return newa, newb
 end
