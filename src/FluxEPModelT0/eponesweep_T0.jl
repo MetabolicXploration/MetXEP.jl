@@ -79,7 +79,6 @@ function eponesweep!(epm::FluxEPModelT0)
 
     # Compute Σi and vi, the parameters (of the independent variables) of the full gaussian Q
     # TODO: check alloc performance
-    println("-"^50)
     Dd = Diagonal(inv.(dd))
     Di = Diagonal(inv.(di))
     Σi_inv = Di + Gt * Dd * G
