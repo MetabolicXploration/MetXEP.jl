@@ -1,101 +1,87 @@
 ## ------------------------------------------------------------------
+_depind_getindex(epm::FluxEPModelT0, cold, coli) = [cold; coli][epm.idxmap_inv]
+function _depind_getindex(epm::FluxEPModelT0, cold, coli, idx::Int)
+    Nd = length(epm.idxd)
+    inv_idx = epm.idxmap_inv[idx]
+    inv_idx <= Nd ? cold[inv_idx] : coli[inv_idx - Nd]
+end
+
+_depind_getindex(epm::FluxEPModelT0, cold, coli, idxs) = 
+    [_depind_getindex(epm, cold, coli, idx) for idx in rxnindex(epm, idxs)]
+
+function _depind_setindex!(epm::FluxEPModelT0, cold, coli, v)
+    v1 = view(v, epm.idxmap)
+    Nd = length(epm.idxd)
+    cold .= v1[1:Nd]
+    coli .= v1[Nd+1:end]
+    return epm
+end
+
+function _depind_setindex!(epm::FluxEPModelT0, cold, coli, idxs, val)
+    _col = _depind_getindex(epm, cold, coli)
+    idxs = rxnindex(epm, idxs)
+    MetXBase._setindex!(_col, idxs, val)
+    _depind_setindex!(epm, cold, coli, _col)
+    return epm
+end
+
 # ep
 export beta
-beta(epm::FluxEPModelT0) = [epm.betad; epm.betai][epm.idxmap_inv]
-function beta(epm::FluxEPModelT0, idxs) 
-    idxs = rxnindex(epm, idxs)
-    if length(idxs) == 1
-        Nd = length(epm.betad)
-        idx = epm.idxmap_inv[idxs]
-        return idx <= Nd ? epm.betad[idx] : epm.betai[idx - Nd]
-    end
-    return beta(epm)[idxs]
-end
+beta(epm::FluxEPModelT0) = _depind_getindex(epm, epm.betad, epm.betai)
+beta(epm::FluxEPModelT0, idxs) = _depind_getindex(epm, epm.betad, epm.betai, idxs)
 
 export beta!
-function beta!(epm::FluxEPModelT0, v::Vector) 
-    v1 = view(v, epm.idxmap)
-    Nd = length(epm.betad)
-    epm.betad .= v1[1:Nd]
-    epm.betai .= v1[Nd+1:end]
-    return epm
-end
-function beta!(epm::FluxEPModelT0, idxs, val) 
-    idxs = rxnindex(epm, idxs)
-    if length(idxs) == 1
-        Nd = length(epm.betad)
-        idx = epm.idxmap_inv[idxs]
-        if idx <= Nd; epm.betad[idx] = val
-            else; epm.betai[idx - Nd] = val
-        end
-    else
-        _beta = beta(epm)
-        MetXBase._setindex!(_beta, idxs, val)
-        beta!(epm, _beta)
-    end
-    return epm
-end
+beta!(epm::FluxEPModelT0, v::Vector) = _depind_setindex!(epm, epm.betad, epm.betai, v)
+beta!(epm::FluxEPModelT0, idxs, val) = _depind_setindex!(epm, epm.betad, epm.betai, idxs, val)
 
 ## ------------------------------------------------------------------
-# TODO: optimize this, do not create vector unnecessarily 
+# internals
+_a(epm::FluxEPModelT0) = _depind_getindex(epm, epm.ad, epm.ai) .* epm.scalefact
+_a(epm::FluxEPModelT0, idxs) = _depind_getindex(epm, epm.ad, epm.ai, idxs) .* epm.scalefact
+_d(epm::FluxEPModelT0) = _depind_getindex(epm, epm.dd, epm.di) .* epm.scalefact^2
+_d(epm::FluxEPModelT0, idxs) = _depind_getindex(epm, epm.dd, epm.di, idxs) .* epm.scalefact^2
+_μ(epm::FluxEPModelT0) = _depind_getindex(epm, epm.μd, epm.μi) .* epm.scalefact
+_μ(epm::FluxEPModelT0, idxs) = _depind_getindex(epm, epm.μd, epm.μi, idxs) .* epm.scalefact
+_s(epm::FluxEPModelT0) = _depind_getindex(epm, epm.sd, epm.si) .* epm.scalefact^2
+_s(epm::FluxEPModelT0, idxs) = _depind_getindex(epm, epm.sd, epm.si, idxs) .* epm.scalefact^2
+_Σi(epm::FluxEPModelT0) = epm.Σi .* epm.scalefact^2
+_vi(epm::FluxEPModelT0) = epm.vi .* epm.scalefact
 
+## ------------------------------------------------------------------
 # Truncated Distribution
 import Statistics.mean
 export mean
-function mean(epm::FluxEPModelT0)
-    av = [epm.avd; epm.avi]
-    rmul!(av, epm.scalefact)
-    return av[epm.idxmap_inv] 
-end
-_mean(epm::FluxEPModelT0, idxs) = mean(epm)[rxnindex(epm, idxs)]
-mean(epm::FluxEPModelT0, idxs::AbstractVector) = _mean(epm, idxs)
+mean(epm::FluxEPModelT0) = _depind_getindex(epm, epm.avd, epm.avi) .* epm.scalefact    
+_mean(epm::FluxEPModelT0, idxs) = _depind_getindex(epm, epm.avd, epm.avi, idxs) .* epm.scalefact
+mean(epm::FluxEPModelT0, idxs::AbstractArray) = _mean(epm, idxs)
+mean(epm::FluxEPModelT0, idxs::Integer) = _mean(epm, idxs)
 mean(epm::FluxEPModelT0, idxs) = _mean(epm, idxs)
 
 import Statistics.var
 export var
 
-function var(epm::FluxEPModelT0)
-    va = [epm.vad; epm.vai]
-    rmul!(va, epm.scalefact^2); 
-    return va[epm.idxmap_inv]
-end
-var(epm::FluxEPModelT0, idxs) = var(epm)[rxnindex(epm, idxs)]
+var(epm::FluxEPModelT0) = _depind_getindex(epm, epm.vad, epm.vai) .* epm.scalefact^2
+var(epm::FluxEPModelT0, idxs) = _depind_getindex(epm, epm.vad, epm.vai, idxs) .* epm.scalefact^2
 
 ## ------------------------------------------------------------------
 # untruncated
 
 export untruncated_mean
-function untruncated_mean(epm::FluxEPModelT0)
-    v = [epm.vd; epm.vi]
-    rmul!(v, epm.scalefact)
-    return v[epm.idxmap_inv] 
-end
-untruncated_mean(epm::FluxEPModelT0, idxs) = untruncated_mean(epm)[rxnindex(epm, idxs)]
+untruncated_mean(epm::FluxEPModelT0) = _depind_getindex(epm, epm.vd, epm.vi) .* epm.scalefact
+untruncated_mean(epm::FluxEPModelT0, idxs) = _depind_getindex(epm, epm.vd, epm.vi, idxs) .* epm.scalefact
 
 export untruncated_var
-function untruncated_var(epm::FluxEPModelT0)
-    s = [diag(epm.Σd); diag(epm.Σi)]
-    rmul!(s, epm.scalefact^2); 
-    return s[epm.idxmap_inv]
-end
-untruncated_var(epm::FluxEPModelT0, idxs) = untruncated_var(epm)[rxnindex(epm, idxs)]
+untruncated_var(epm::FluxEPModelT0) = _depind_getindex(epm, diag(epm.Σd), diag(epm.Σi)) .* epm.scalefact^2
+untruncated_var(epm::FluxEPModelT0, idxs) = _depind_getindex(epm, diag(epm.Σd), diag(epm.Σi), idxs) .* epm.scalefact^2
 
 ## -----
 # MetNet
 import MetXBase.lb
 export lb
-function lb(epm::FluxEPModelT0)
-    _lb = [epm.lbd; epm.lbi]
-    rmul!(_lb, epm.scalefact); 
-    return _lb[epm.idxmap_inv]
-end
-lb(epm::FluxEPModelT0, idxs) = lb(epm)[rxnindex(epm, idxs)]
+lb(epm::FluxEPModelT0) = _depind_getindex(epm, epm.lbd, epm.lbi) .* epm.scalefact
+lb(epm::FluxEPModelT0, idxs) = _depind_getindex(epm, epm.lbd, epm.lbi, idxs) .* epm.scalefact
 
 import MetXBase.ub
 export ub
-function ub(epm::FluxEPModelT0)
-    _ub = [epm.ubd; epm.ubi]
-    rmul!(_ub, epm.scalefact); 
-    return _ub[epm.idxmap_inv]
-end
-ub(epm::FluxEPModelT0, idxs) = ub(epm)[rxnindex(epm, idxs)]
+ub(epm::FluxEPModelT0) = _depind_getindex(epm, epm.ubd, epm.ubi) .* epm.scalefact
+ub(epm::FluxEPModelT0, idxs) = _depind_getindex(epm, epm.ubd, epm.ubi, idxs) .* epm.scalefact

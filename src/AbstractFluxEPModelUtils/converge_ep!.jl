@@ -63,6 +63,7 @@ function converge!(epm::AbstractFluxEPModel;
     end # for iter
 
     verbose && finish!(prog)
+    verbose && println("convergence_status: ", convergence_status(epm))
 
     # return
     # return produce_epout!(epm, status, iter; drop_epfields)

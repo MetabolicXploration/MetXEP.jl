@@ -13,7 +13,6 @@ import Distributions.entropy
 export entropy
 
 function _normal_entropy(Σ)
-    N = size(Σ,1);
     L = _cholesky(Σ).L
     N = size(Σ,1)
     S = sum(log.(diag(L))) .+ 0.5 * N * log(2 * pi * exp(1))
@@ -25,7 +24,7 @@ function entropy(epm::FluxEPModelT0)
     # basis * vi = v
     # basis = epm.basis
     # Cov = basis * epm.Σi * basis'
-    Cov = epm.Σi
+    Cov = _Σi(epm)
     return _normal_entropy(Cov)
 end
 

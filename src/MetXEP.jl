@@ -58,8 +58,8 @@ module MetXEP
     #! include FluxEPModelT0
     include("FluxEPModelT0/Distributions.jl")
     include("FluxEPModelT0/eponesweep_T0.jl")
+    include("FluxEPModelT0/free_energy.jl")
     include("FluxEPModelT0/interfaces.jl")
-    include("FluxEPModelT0/span.jl")
 
     #! include .
 
