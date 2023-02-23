@@ -1,3 +1,5 @@
+# TODO: add numerical stability stuff
+
 _Ncdf(x) = 0.5*(1.0+erf(big(x)/sqrt(2.0)))
 _Ncdf(x, av, sd) = _Ncdf((x - av) / sd)
 
@@ -19,7 +21,6 @@ function free_energy(epm::FluxEPModelT0{T}) where {T}
     for i in 1:N
         # ZQn
         F_ul = _Ncdf(us[i], μs[i], sqrt(ss[i])) - _Ncdf(ls[i], μs[i], sqrt(ss[i]))
-        # TODO: make this more stable
         _ZQn = _ZQ * F_ul
         _∑logZ_Qn += log(_ZQn)
     end
