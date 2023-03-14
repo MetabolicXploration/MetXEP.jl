@@ -7,7 +7,7 @@ function _depind_getindex(epm::FluxEPModelT0, cold, coli, idx::Int)
 end
 
 _depind_getindex(epm::FluxEPModelT0, cold, coli, idxs) = 
-    [_depind_getindex(epm, cold, coli, idx) for idx in rxnindex(epm, idxs)]
+    [_depind_getindex(epm, cold, coli, idx) for idx in colindex(epm, idxs)]
 
 function _depind_setindex!(epm::FluxEPModelT0, cold, coli, v)
     v1 = view(v, epm.idxmap)
@@ -19,18 +19,16 @@ end
 
 function _depind_setindex!(epm::FluxEPModelT0, cold, coli, idxs, val)
     _col = _depind_getindex(epm, cold, coli)
-    idxs = rxnindex(epm, idxs)
+    idxs = colindex(epm, idxs)
     MetXBase._setindex!(_col, idxs, val)
     _depind_setindex!(epm, cold, coli, _col)
     return epm
 end
 
 # ep
-export beta
 beta(epm::FluxEPModelT0) = _depind_getindex(epm, epm.betad, epm.betai)
 beta(epm::FluxEPModelT0, idxs) = _depind_getindex(epm, epm.betad, epm.betai, idxs)
 
-export beta!
 beta!(epm::FluxEPModelT0, v::Vector) = _depind_setindex!(epm, epm.betad, epm.betai, v)
 beta!(epm::FluxEPModelT0, idxs, val) = _depind_setindex!(epm, epm.betad, epm.betai, idxs, val)
 
@@ -50,7 +48,6 @@ _vi(epm::FluxEPModelT0) = epm.vi .* epm.scalefact
 ## ------------------------------------------------------------------
 # Truncated Distribution
 import Statistics.mean
-export mean
 mean(epm::FluxEPModelT0) = _depind_getindex(epm, epm.avd, epm.avi) .* epm.scalefact    
 _mean(epm::FluxEPModelT0, idxs) = _depind_getindex(epm, epm.avd, epm.avi, idxs) .* epm.scalefact
 mean(epm::FluxEPModelT0, idxs::AbstractArray) = _mean(epm, idxs)
@@ -58,30 +55,15 @@ mean(epm::FluxEPModelT0, idxs::Integer) = _mean(epm, idxs)
 mean(epm::FluxEPModelT0, idxs) = _mean(epm, idxs)
 
 import Statistics.var
-export var
-
 var(epm::FluxEPModelT0) = _depind_getindex(epm, epm.vad, epm.vai) .* epm.scalefact^2
 var(epm::FluxEPModelT0, idxs) = _depind_getindex(epm, epm.vad, epm.vai, idxs) .* epm.scalefact^2
 
 ## ------------------------------------------------------------------
 # untruncated
 
-export untruncated_mean
 untruncated_mean(epm::FluxEPModelT0) = _depind_getindex(epm, epm.vd, epm.vi) .* epm.scalefact
 untruncated_mean(epm::FluxEPModelT0, idxs) = _depind_getindex(epm, epm.vd, epm.vi, idxs) .* epm.scalefact
 
-export untruncated_var
 untruncated_var(epm::FluxEPModelT0) = _depind_getindex(epm, diag(epm.Σd), diag(epm.Σi)) .* epm.scalefact^2
 untruncated_var(epm::FluxEPModelT0, idxs) = _depind_getindex(epm, diag(epm.Σd), diag(epm.Σi), idxs) .* epm.scalefact^2
 
-## -----
-# MetNet
-import MetXBase.lb
-export lb
-lb(epm::FluxEPModelT0) = _depind_getindex(epm, epm.lbd, epm.lbi) .* epm.scalefact
-lb(epm::FluxEPModelT0, idxs) = _depind_getindex(epm, epm.lbd, epm.lbi, idxs) .* epm.scalefact
-
-import MetXBase.ub
-export ub
-ub(epm::FluxEPModelT0) = _depind_getindex(epm, epm.ubd, epm.ubi) .* epm.scalefact
-ub(epm::FluxEPModelT0, idxs) = _depind_getindex(epm, epm.ubd, epm.ubi, idxs) .* epm.scalefact

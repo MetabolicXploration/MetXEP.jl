@@ -1,7 +1,7 @@
 ## ------------------------------------------------------------------------------
-# A model for optimizing over the space of flux configurations
-# A struct that contain all the data required for converging ep
-export FluxEPModelT0
+# A struct that contain all the data required for converging ep over a lep model
+
+#TODO: rename FluxEPModelT0 -> EPT0Model
 Base.@kwdef struct FluxEPModelT0{T} <: AbstractFluxEPModel where {T<:AbstractFloat}
 
     # T0
@@ -13,10 +13,10 @@ Base.@kwdef struct FluxEPModelT0{T} <: AbstractFluxEPModel where {T<:AbstractFlo
     be::Union{Nothing, Vector{T}} = nothing
     basis::Union{Nothing, Matrix{T}} = nothing
     # permutations (see echelonize)
-    idxi::Union{Nothing, Vector{Int}}  = nothing # Map from epmi -> neti
-    idxd::Union{Nothing, Vector{Int}}  = nothing # Map from epmd -> netd
-    idxmap::Union{Nothing, Vector{Int}}  = nothing # Map from epm -> net
-    idxmap_inv::Union{Nothing, Vector{Int}}  = nothing # Map from net -> epm
+    idxi::Union{Nothing, Vector{Int}}  = nothing # Map from epmi -> lepi
+    idxd::Union{Nothing, Vector{Int}}  = nothing # Map from epmd -> lepd
+    idxmap::Union{Nothing, Vector{Int}}  = nothing # Map from epm -> lep
+    idxmap_inv::Union{Nothing, Vector{Int}}  = nothing # Map from lep -> epm
 
     # ep fields
     betai::Union{Nothing, Vector{T}} = nothing
@@ -149,21 +149,32 @@ function FluxEPModelT0(
     )
 end
 
+# submodel
+function FluxEPModelT0(template::FluxEPModelT0; to_overwrite...)
+    dict = Dict{Symbol, Any}(to_overwrite)
 
-function FluxEPModelT0(net::MetNet; 
-        netfields = [:rxns],                # fields to chache
-        netcopy = false,                    # flag to make an internal copy of the net fields
-        ep_model_kwargs...
-    ) 
+    for field in fieldnames(typeof(template))
+        haskey(dict, field) && continue # avoid use the template version
+        dict[field] = getfield(template, field)
+    end
     
-    epm = FluxEPModelT0(net.S, net.b, net.lb, net.ub; ep_model_kwargs...)
+    return FluxEPModelT0(;dict...)
+end
 
-    # cache net
-    net0 = extract_fields(net, netfields)
-    net0 = netcopy ? deepcopy(net0) : net0
-    net1 = MetNet(; net0...)
-    # metnet!(epm, reindex(net1; rxn_idxs = epm.idxmap))
-    metnet!(epm, net1)
+## ------------------------------------------------------------------
+function FluxEPModelT0(lep::LEPModel; 
+        add_extras!::Function = (epm) -> nothing,
+        ep_model_kwargs...
+    )
+    
+    epm = FluxEPModelT0(lep.S, lep.b, lep.lb, lep.ub; ep_model_kwargs...)
+
+    # cache lep specific stuff
+    extras!(epm, :colids, colids(lep))
+    extras!(epm, :rowids, rowids(lep))
+
+    # custom estras
+    add_extras!(epm)
 
     # default config
     config!(epm, :verbose, false)
@@ -180,14 +191,5 @@ function FluxEPModelT0(net::MetNet;
     return epm
 end
 
-# submodel
-function FluxEPModelT0(template::FluxEPModelT0; to_overwrite...)
-    dict = Dict{Symbol, Any}(to_overwrite)
-
-    for field in fieldnames(typeof(template))
-        haskey(dict, field) && continue # avoid use the template version
-        dict[field] = getfield(template, field)
-    end
-    
-    return FluxEPModelT0(;dict...)
-end
+# Default for lep interfaced objects
+FluxEPModelT0(model; kwargs...) = FluxEPModelT0(lepmodel(model); kwargs...)

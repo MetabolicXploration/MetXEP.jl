@@ -1,5 +1,4 @@
 import Distributions.MultivariateNormal
-export MultivariateNormal
 function MultivariateNormal(epm::FluxEPModelT0)
     vi = _dense(epm.vi)
     Σi = _dense(epm.Σi)
@@ -10,8 +9,6 @@ function MultivariateNormal(epm::FluxEPModelT0)
 end
 
 import Distributions.entropy
-export entropy
-
 function _normal_entropy(Σ)
     L = _cholesky(Σ).L
     N = size(Σ,1)
@@ -28,7 +25,6 @@ function entropy(epm::FluxEPModelT0)
     return _normal_entropy(Cov)
 end
 
-export orthnorm_entropy
 function orthnorm_entropy(epm::FluxEPModelT0)
     # basis * vi = v -> basis
     basis = epm.basis

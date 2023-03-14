@@ -1,4 +1,3 @@
-export converge!
 function converge!(epm::AbstractFluxEPModel; 
         # callbacks
         oniter = nothing

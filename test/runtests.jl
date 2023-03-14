@@ -1,10 +1,15 @@
+# activate env
+using RunTestsEnv
+@activate_testenv
+
+using MetXEP
 using MetXNetHub
+using MetXGEMs
 using MetXOptim
-using MetXOptim: GLPK
+using MetXOptim.GLPK
 using MetXBase
 using MetXBase.UnicodePlots
 using LinearAlgebra
-using MetXEP
 using Test
 
 const LIN_SOLVER = GLPK.Optimizer
@@ -20,20 +25,20 @@ const LIN_SOLVER = GLPK.Optimizer
         println("."^60)
         println()
         
-        net = pull_net("toy_net")
-        net = box(net, LIN_SOLVER)
-        epm = FluxEPModelT0(net)
+        net0 = pull_net("toy_net")
+        lep = box(net0, LIN_SOLVER)
+        epm = FluxEPModelT0(lep)
         # beta
 
-        for rxn in reactions(net)
+        for rxn in colids(lep)
             beta!(epm, rxn, 1)
-            @test findfirst(isone, beta(epm)) == rxnindex(epm, rxn)
+            @test findfirst(isone, beta(epm)) == colindex(epm, rxn)
             beta!(epm, rxn, 0)
             @test count(isone, beta(epm)) |> iszero
         end
 
-        @test isapprox(lb(epm), lb(net))
-        @test isapprox(ub(epm), ub(net))
+        @test isapprox(lb(epm), lb(lep))
+        @test isapprox(ub(epm), ub(lep))
 
         println()
     end
@@ -48,17 +53,17 @@ const LIN_SOLVER = GLPK.Optimizer
         println()
 
         model_id = "ecoli_core"
-        net = pull_net(model_id)
-        biom_id = extras(net, "BIOM")
-        glc_id = extras(net, "EX_GLC")
+        net0 = pull_net(model_id)
+        biom_id = extras(net0, "BIOM")
+        glc_id = extras(net0, "EX_GLC")
         
-        net = box(net, GLPK.Optimizer; eps = 1e-4)
-        M, N = size(net)
-        Srank = rank(net.S)
+        lep = box(net0, GLPK.Optimizer; eps = 1e-4)
+        M, N = size(lep)
+        Srank = rank(lep.S)
 
-        opm = fba(net, GLPK.Optimizer)
+        opm = fba(lep, GLPK.Optimizer)
 
-        epm = FluxEPModelT0(net)
+        epm = FluxEPModelT0(lep)
         config!(epm; 
             verbose = false, 
             maxiter = 3000, 
@@ -124,10 +129,10 @@ const LIN_SOLVER = GLPK.Optimizer
     # FluxEPModelT0 Normal Join Parameters
     let
         model_id = "ecoli_core"
-        net = pull_net(model_id)
-        net = box(net, GLPK.Optimizer; eps = 1e-4)
+        net0 = pull_net(model_id)
+        lep = box(net0, GLPK.Optimizer; eps = 1e-4)
 
-        epm = FluxEPModelT0(net)
+        epm = FluxEPModelT0(lep)
         config!(epm; 
             damp = 0.90,
             verbose = true,

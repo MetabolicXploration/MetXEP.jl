@@ -1,5 +1,3 @@
-# TODO: Creates a direct matrix interface to EP (LEP_EPModel, lineal estimation problem)
-
 # TODO
 # Make/documment common setting interface setter(model, ider, val)
 # make a fixxing-like setting interface
@@ -8,9 +6,8 @@ module MetXEP
     
     using Reexport
     
-    @reexport using MetXBase
-    @reexport using MetXOptim
-    @reexport using MetXNetHub
+    using MetXBase
+    using MetXOptim
     
     using SparseArrays
     using ProgressMeter
@@ -18,49 +15,44 @@ module MetXEP
     using LinearAlgebra: inv!
     using Statistics
     
-    import MetXBase: _dense, basis_mat, mgrscho
-    import MetXBase: nearPD!, _cholesky
     import Printf: @printf
     import ExtractMacro: @extract
-    import SpecialFunctions: erf
     import Distributions: Truncated, Normal, mean, var, MvNormal
 
     #! include Types
-    include("Types/AbstractFluxEPModel.jl")
-    include("Types/FluxEPModelT0.jl")
-        
-    #! include Utils
-    include("Utils/summary.jl")
-    include("Utils/utils.jl")
+    include("Types/0_AbstractFluxEPModel.jl")
+    include("Types/1_FluxEPModelT0.jl")
     
     #! include EPBase
     include("EPBase/compute_mom5d.jl")
     include("EPBase/epconverge.jl")
     include("EPBase/eponesweep_relaxed.jl")
-    include("EPBase/fast_maxent_ep.jl")
     include("EPBase/get_join.jl")
     include("EPBase/get_scalefactor.jl")
     include("EPBase/matchmom.jl")
-    include("EPBase/maxent_ep.jl")
     include("EPBase/newav.jl")
     include("EPBase/newμs.jl")
     include("EPBase/parseexpval.jl")
     include("EPBase/prepareinput.jl")
     include("EPBase/scaleepfield.jl")
-    include("EPBase/toy_maxent_ep.jl")
     
     #! include AbstractFluxEPModelUtils
     include("AbstractFluxEPModelUtils/base.jl")
     include("AbstractFluxEPModelUtils/converge_ep!.jl")
     include("AbstractFluxEPModelUtils/interfaces.jl")
+    include("AbstractFluxEPModelUtils/lep_interface.jl")
     include("AbstractFluxEPModelUtils/status.jl")
 
-    #! include FluxEPModelT0
-    include("FluxEPModelT0/Distributions.jl")
-    include("FluxEPModelT0/eponesweep_T0.jl")
-    include("FluxEPModelT0/free_energy.jl")
-    include("FluxEPModelT0/interfaces.jl")
+    #! include FluxEPModelT0Utils
+    include("FluxEPModelT0Utils/Distributions.jl")
+    include("FluxEPModelT0Utils/eponesweep_T0.jl")
+    include("FluxEPModelT0Utils/free_energy.jl")
+    include("FluxEPModelT0Utils/interfaces.jl")
+    include("FluxEPModelT0Utils/lep_interface.jl")
 
     #! include .
+
+    # exports
+    @_exportall_non_underscore()
 
 end
