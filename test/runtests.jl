@@ -57,11 +57,11 @@ const LIN_SOLVER = GLPK.Optimizer
         biom_id = extras(net0, "BIOM")
         glc_id = extras(net0, "EX_GLC")
         
-        lep = box(net0, GLPK.Optimizer; eps = 1e-4)
+        lep = box(net0, LIN_SOLVER; eps = 1e-4)
         M, N = size(lep)
         Srank = rank(lep.S)
 
-        opm = fba(lep, GLPK.Optimizer)
+        opm = fba(lep, LIN_SOLVER)
 
         epm = FluxEPModelT0(lep)
         config!(epm; 
@@ -130,7 +130,7 @@ const LIN_SOLVER = GLPK.Optimizer
     let
         model_id = "ecoli_core"
         net0 = pull_net(model_id)
-        lep = box(net0, GLPK.Optimizer; eps = 1e-4)
+        lep = box(net0, LIN_SOLVER; eps = 1e-4)
 
         epm = FluxEPModelT0(lep)
         config!(epm; 
@@ -166,7 +166,36 @@ const LIN_SOLVER = GLPK.Optimizer
         @test isapprox(vi, vi0; rtol = 1e-2)
 
     end
-    
 
+    ## ------------------------------------------------------------------
+    # Average grad desc
+    let
+        ## ---------------------------------------------
+        model_id = "ecoli_core"
+        net0 = pull_net(model_id)
+        lep = box(net0, LIN_SOLVER; verbose = false)
+        biom_id = extras(lep, "BIOM") 
+        glc_id = extras(lep, "EX_GLC")
+        lac_id = "EX_lac__D_e"
+
+        ## ---------------------------------------------
+        # EP MODEL
+        epm = FluxEPModelT0(lep)
+        config!(epm; epsconv = 1e-4, verbose = true)
+        converge!(epm)
+
+        ## ---------------------------------------------
+        target_ids = [biom_id, glc_id, lac_id]
+        target_avs = [0.2, -9.0, 0.1]
+        gdmodel = average_gd!(epm, target_ids, target_avs;
+            maxΔx = [1e3, 1e3, 1e4],
+            gdth = 1e-2,
+            maxiter = 500,
+            verbose = true
+        )
+
+        ## ---------------------------------------------
+        @test isapprox(mean(epm, target_ids), target_avs; rtol = 1e-2)
+    end
 
 end

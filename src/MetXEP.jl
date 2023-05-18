@@ -45,6 +45,7 @@ module MetXEP
 
     #! include FluxEPModelT0Utils
     include("FluxEPModelT0Utils/Distributions.jl")
+    include("FluxEPModelT0Utils/average_gd.jl")
     include("FluxEPModelT0Utils/eponesweep_T0.jl")
     include("FluxEPModelT0Utils/free_energy.jl")
     include("FluxEPModelT0Utils/interfaces.jl")
