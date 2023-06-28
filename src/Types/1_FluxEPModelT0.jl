@@ -21,6 +21,9 @@ Base.@kwdef struct FluxEPModelT0{T} <: AbstractFluxEPModel where {T<:AbstractFlo
     # ep fields
     betai::Union{Nothing, Vector{T}} = nothing
     betad::Union{Nothing, Vector{T}} = nothing
+
+    gammai::Union{Nothing, Vector{T}} = nothing
+    gammad::Union{Nothing, Vector{T}} = nothing
     
     avi::Union{Nothing, Vector{T}} = nothing
     avd::Union{Nothing, Vector{T}} = nothing
@@ -55,6 +58,7 @@ function FluxEPModelT0(
         S::AbstractArray{T,2}, b::AbstractArray{T}, 
         lb::AbstractArray{T}, ub::AbstractArray{T};
         beta::AbstractVector{T} = spzeros(T, size(S, 2)),               # maxent inverse temperature vector
+        gamma::AbstractVector{T} = spzeros(T, size(S, 2)),              # maxent quadratic terms bias
         expval = nothing,                                               # fix posterior probability experimental values 
     ) where {T<:AbstractFloat}
 
@@ -117,6 +121,11 @@ function FluxEPModelT0(
         betad .= beta[idxd]
         betai .= beta[idxi]
     end
+    gammad, gammai = spzeros(T, Nd), spzeros(T, Ni)
+    if !isempty(gamma) 
+        gammad .= gamma[idxd]
+        gammai .= gamma[idxi]
+    end
 
     idxmap_inv = sortperm(idxmap)
     basis = basis_mat(G, idxi, idxd)
@@ -126,9 +135,11 @@ function FluxEPModelT0(
     Gt = G'
     Dd = Diagonal(inv.(dd))
     Di = Diagonal(inv.(di))
-    Σi_inv = Di + Gt * Dd * G
+    gammaiD = Diagonal(gammai)
+    gammadD = Diagonal(gammad)
+    Σi_inv = Di - gammaiD + Gt * Dd * G - Gt * gammadD * G
     inplaceinverse!(Σi, Σi_inv)
-    vi .= Σi * (Gt * Dd * (be - ad) + Di * ai - Gt * betad + betai)
+    vi .= Σi * (Gt * Dd * (be - ad) - Gt * betad - Gt * gammadD * be + Di * ai + betai)
     
     # Compute Σd and vd, the parameters (of the dependent variables) of the full gaussian Q
     mul!(Σd, G * Σi, Gt) 
@@ -139,6 +150,7 @@ function FluxEPModelT0(
         Σd, Σi, G, vd, vi, be, basis, 
         idxi, idxd, idxmap, idxmap_inv,
         betai, betad, 
+        gammai, gammad, 
         avi, avd, vai, vad, 
         μi, μd, si, sd, 
         ai, ad, di, dd, 

@@ -28,13 +28,19 @@ const LIN_SOLVER = GLPK.Optimizer
         net0 = pull_net("toy_net")
         lep = box(net0, LIN_SOLVER)
         epm = FluxEPModelT0(lep)
-        # beta
-
+        
         for rxn in colids(lep)
+            # beta
             beta!(epm, rxn, 1)
             @test findfirst(isone, beta(epm)) == colindex(epm, rxn)
             beta!(epm, rxn, 0)
             @test count(isone, beta(epm)) |> iszero
+            
+            # gamma
+            gamma!(epm, rxn, 1)
+            @test findfirst(isone, gamma(epm)) == colindex(epm, rxn)
+            gamma!(epm, rxn, 0)
+            @test count(isone, gamma(epm)) |> iszero
         end
 
         @test isapprox(lb(epm), lb(lep))
@@ -145,13 +151,14 @@ const LIN_SOLVER = GLPK.Optimizer
         # Join
         G = epm.G
         βi, βd = epm.betai, epm.betad
+        γi, γd = Diagonal(epm.gammai), Diagonal(epm.gammad)
         di, dd = epm.di, epm.dd
         Di, Dd = Diagonal(inv.(di)), Diagonal(inv.(dd))
         ai, ad = epm.ai, epm.ad
         b = epm.be
         vi, Σi = epm.vi, epm.Σi
 
-        Σi0inv = Di + G' * Dd * G
+        Σi0inv = Di - γi + G' * Dd * G - G' * γd * G 
         Σi0 = similar(Σi0inv)
         MetXEP.inplaceinverse!(Σi0, Σi0inv)
         @show isposdef(Σi)
@@ -161,14 +168,14 @@ const LIN_SOLVER = GLPK.Optimizer
         @show maximum(abs, vec(Σi .- Σi0))
         @test isapprox(Σi, Σi0; rtol = 1e-2)
         
-        vi0 = Σi0 * (G' * Dd * (b - ad) + Di * ai - G' * βd + βi)
+        vi0 = Σi0 * (G' * Dd * (b - ad) - G' * γd * b + Di * ai - G' * βd + βi)
         @show maximum(abs, vec(vi .- vi0))
         @test isapprox(vi, vi0; rtol = 1e-2)
 
     end
 
     ## ------------------------------------------------------------------
-    # Average grad desc
+    # beta grad desc
     let
         ## ---------------------------------------------
         model_id = "ecoli_core"
@@ -187,7 +194,8 @@ const LIN_SOLVER = GLPK.Optimizer
         ## ---------------------------------------------
         target_ids = [biom_id, glc_id, lac_id]
         target_avs = [0.2, -9.0, 0.1]
-        gdmodel = average_gd!(epm, target_ids, target_avs;
+        obj_fun = (x...) -> mean(epm, target_ids)
+        gdmodel = beta_gd!(obj_fun, epm, target_ids, target_avs;
             maxΔx = [1e3, 1e3, 1e4],
             gdth = 1e-2,
             maxiter = 500,
@@ -196,6 +204,39 @@ const LIN_SOLVER = GLPK.Optimizer
 
         ## ---------------------------------------------
         @test isapprox(mean(epm, target_ids), target_avs; rtol = 1e-2)
+    end
+
+    ## ------------------------------------------------------------------
+    # gamma grad desc
+    let
+        ## ---------------------------------------------
+        model_id = "ecoli_core"
+        net0 = pull_net(model_id)
+        lep = box(net0, LIN_SOLVER; verbose = false)
+        biom_id = extras(lep, "BIOM") 
+    
+        ## ---------------------------------------------
+        # EP MODEL
+        epm = FluxEPModelT0(lep)
+        config!(epm; epsconv = 1e-4, verbose = true)
+        converge!(epm)
+    
+        # ## ---------------------------------------------
+        target_ids = [biom_id]
+        # target_values = [0.002]
+        target_values = [0.0006]
+        obj_fun = (x...) -> var(epm, target_ids)
+        gdmodel = gamma_gd!(obj_fun, epm, target_ids, target_values;
+            maxΔx = [1e6],
+            minΔx = [5e5],
+            gdth = 1e-3,
+            maxiter = 1500,
+            verbose = true
+        )
+        @show var(epm, target_ids)
+    
+        ## ---------------------------------------------
+        @assert isapprox(obj_fun(), target_values; rtol = 1e-2)
     end
 
 end

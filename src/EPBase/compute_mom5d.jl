@@ -28,8 +28,9 @@ function compute_mom5d(xinf, xsup)
             scra2 = (xinf*xsup)^5 * (xsup - xinf*exp(delta2)) / (-exp(delta2)*(3.0-xinf^2 + xinf^4)*xsup^5 + xinf^5*(3-xsup^2 + xsup^4))
         end
         scra12 = scra2 - scra1^2
-        isnan(scra1) || isnan(scra2) || isnan(scra12) && println("scra1 = $scra1 scra2 = $scra2")
-        !isfinite(scra1) ||  !isfinite(scra2) && println("scra1 = $scra1 scra2 = $scra2")
+        if !isfinite(scra1 + scra2 + scra12)
+            error("Trucated moments calculation failed, scra1 = $scra1 scra2 = $scra2")
+        end
         return scra1, scra12
     end
 end

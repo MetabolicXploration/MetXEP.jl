@@ -20,7 +20,6 @@ function converge!(epm::AbstractFluxEPModel;
     
     # sweep ep till maxiter is reached or max(errav, errvar) < epsconv
     prog = ProgressThresh{typeof(epsconv)}(epsconv; desc =  "EP  ", dt = 0.5)
-    # max_beta = findmax(epm.beta)
     # TODO: Interface this
     # minimum iters before checking convergence
     _c = 0 
@@ -45,11 +44,9 @@ function converge!(epm::AbstractFluxEPModel;
             inv_time = state(epm, :elapsed_eponesweep_inv, 0)
             inv_frac = round(inv_time * 100/ sweep_time; digits = 3)
 
-            update!(prog, max_err; showvalues = [
+            update!(prog, max_err; showvalues = () -> [
                 (:iter, state(epm, :iter, "nd")),
                 (:maxiter, config(epm, :maxiter, "nd")),
-                # (:alpha, alpha),
-                # (:max_beta, max_beta),
                 (:sweep_time, sweep_time),
                 (:inv_time, string(inv_time, " [", inv_frac, " %]")),
             ])
@@ -65,7 +62,6 @@ function converge!(epm::AbstractFluxEPModel;
     verbose && println("convergence_status: ", convergence_status(epm))
 
     # return
-    # return produce_epout!(epm, status, iter; drop_epfields)
     return epm
 end
 

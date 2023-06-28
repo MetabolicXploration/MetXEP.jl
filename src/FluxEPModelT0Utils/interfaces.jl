@@ -32,6 +32,12 @@ beta(epm::FluxEPModelT0, idxs) = _depind_getindex(epm, epm.betad, epm.betai, idx
 beta!(epm::FluxEPModelT0, v::Vector) = _depind_setindex!(epm, epm.betad, epm.betai, v)
 beta!(epm::FluxEPModelT0, idxs, val) = _depind_setindex!(epm, epm.betad, epm.betai, idxs, val)
 
+gamma(epm::FluxEPModelT0) = _depind_getindex(epm, epm.gammad, epm.gammai)
+gamma(epm::FluxEPModelT0, idxs) = _depind_getindex(epm, epm.gammad, epm.gammai, idxs)
+
+gamma!(epm::FluxEPModelT0, v::Vector) = _depind_setindex!(epm, epm.gammad, epm.gammai, v)
+gamma!(epm::FluxEPModelT0, idxs, val) = _depind_setindex!(epm, epm.gammad, epm.gammai, idxs, val)
+
 ## ------------------------------------------------------------------
 # internals
 _a(epm::FluxEPModelT0) = _depind_getindex(epm, epm.ad, epm.ai) .* epm.scalefact

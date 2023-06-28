@@ -11,6 +11,7 @@ function eponesweep!(epm::FluxEPModelT0)
     @extract epm: μd μi sd si 
     @extract epm: avd avi vai vad
     @extract epm: betad betai
+    @extract epm: gammad gammai
     @extract epm: siteflagave_i siteflagave_d
     @extract epm: siteflagvar_i siteflagvar_d
     
@@ -81,11 +82,13 @@ function eponesweep!(epm::FluxEPModelT0)
     # TODO: check alloc performance
     Dd = Diagonal(inv.(dd))
     Di = Diagonal(inv.(di))
-    Σi_inv = Di + Gt * Dd * G
+    gammaiD = Diagonal(gammai)
+    gammadD = Diagonal(gammad)
+    Σi_inv = Di - gammaiD + Gt * Dd * G - Gt * gammadD * G
     state!(epm, :elapsed_eponesweep_inv) do
         return @elapsed inplaceinverse!(Σi, Σi_inv)
     end
-    vi .= Σi * (Gt * Dd * (be - ad) + Di * ai - Gt * betad + betai)
+    vi .= Σi * (Gt * Dd * (be - ad) - Gt * betad - Gt * gammadD * be + Di * ai + betai)
     
     # Compute Σd and vd, the parameters (of the dependent variables) of the full gaussian Q
     # mul!(Σd, G * Σi, Gt) 
