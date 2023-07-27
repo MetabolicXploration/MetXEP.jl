@@ -49,6 +49,9 @@ _μ(epm::FluxEPModelT0, idxs) = _depind_getindex(epm, epm.μd, epm.μi, idxs) .*
 _s(epm::FluxEPModelT0) = _depind_getindex(epm, epm.sd, epm.si) .* epm.scalefact^2
 _s(epm::FluxEPModelT0, idxs) = _depind_getindex(epm, epm.sd, epm.si, idxs) .* epm.scalefact^2
 _Σi(epm::FluxEPModelT0) = epm.Σi .* epm.scalefact^2
+_Σii(epm::FluxEPModelT0) = diag(epm.Σi) .* epm.scalefact^2
+_v(epm::FluxEPModelT0) = _depind_getindex(epm, epm.vd, epm.vi) .* epm.scalefact
+_v(epm::FluxEPModelT0, idxs) = _depind_getindex(epm, epm.vd, epm.vi, idxs) .* epm.scalefact
 _vi(epm::FluxEPModelT0) = epm.vi .* epm.scalefact
 
 ## ------------------------------------------------------------------
@@ -67,9 +70,11 @@ var(epm::FluxEPModelT0, idxs) = _depind_getindex(epm, epm.vad, epm.vai, idxs) .*
 ## ------------------------------------------------------------------
 # untruncated
 
-untruncated_mean(epm::FluxEPModelT0) = _depind_getindex(epm, epm.vd, epm.vi) .* epm.scalefact
-untruncated_mean(epm::FluxEPModelT0, idxs) = _depind_getindex(epm, epm.vd, epm.vi, idxs) .* epm.scalefact
+untruncated_mean(epm::FluxEPModelT0) = _v(epm)
+untruncated_mean(epm::FluxEPModelT0, idxs) = _v(epm, idxs)
 
-untruncated_var(epm::FluxEPModelT0) = _depind_getindex(epm, diag(epm.Σd), diag(epm.Σi)) .* epm.scalefact^2
-untruncated_var(epm::FluxEPModelT0, idxs) = _depind_getindex(epm, diag(epm.Σd), diag(epm.Σi), idxs) .* epm.scalefact^2
+untruncated_var(epm::FluxEPModelT0) = 
+    _depind_getindex(epm, diag(epm.Σd), diag(epm.Σi)) .* epm.scalefact^2
+untruncated_var(epm::FluxEPModelT0, idxs) = 
+    _depind_getindex(epm, diag(epm.Σd), diag(epm.Σi), idxs) .* epm.scalefact^2
 
