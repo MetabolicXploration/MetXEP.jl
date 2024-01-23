@@ -6,7 +6,10 @@ function prepareinput(S, lb, ub, alpha, verbose, solution, expval)
 
     M,N = size(S)
     verbose && M >= N && @warn("M = $M ≥ N = $N")
-    all(lb .<= ub) || error("lower bound fluxes > upper bound fluxes. Consider swapping lower and upper bounds")
+    for (i, (l, u)) in enumerate(zip(lb, ub))
+        l <= u && continue
+        error("lower bound [$l] >= upper bound [$u] at index $i")
+    end
 
     verbose && println(stderr, "Analyzing a $M x $N stoichiometric matrix.")
 

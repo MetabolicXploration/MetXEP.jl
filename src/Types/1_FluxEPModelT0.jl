@@ -65,7 +65,10 @@ function FluxEPModelT0(
     # Some checks
     M, N = size(S)
     M > N && @warn("Number of rows M=$M larger than number of cols N=$N")
-    any(lb .> ub) && error("lower bound fluxes > upper bound fluxes. Consider swapping lower and upper bounds")
+    for (i, (l, u)) in enumerate(zip(lb, ub))
+        l <= u && continue
+        error("lower bound [$l] >= upper bound [$u] at index $i")
+    end
 
     # echelonize
     S = S isa DenseMatrix ? S : Matrix(S)

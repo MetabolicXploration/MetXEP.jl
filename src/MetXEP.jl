@@ -31,7 +31,7 @@ module MetXEP
     include("EPBase/get_scalefactor.jl")
     include("EPBase/matchmom.jl")
     include("EPBase/newav.jl")
-    include("EPBase/newμs.jl")
+    include("EPBase/newmus.jl")
     include("EPBase/parseexpval.jl")
     include("EPBase/prepareinput.jl")
     include("EPBase/scaleepfield.jl")
