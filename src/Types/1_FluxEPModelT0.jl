@@ -89,8 +89,8 @@ function FluxEPModelT0(
     μd, μi = zeros(T, Nd), zeros(T, Ni)
     sd, si = ones(T, Nd), ones(T, Ni)
     ad, ai = zeros(T, Nd), zeros(T, Ni)
-    # max_λ = (sqrt(eigmax(G * G')) + 0.5)
-    max_λ = 1.0
+    max_λ = (sqrt(eigmax(G * G')) + 0.5)
+    # max_λ = 1.0
     dd, di = ones(T, Nd) .* max_λ, ones(T, Ni) .* max_λ
     
     # expval

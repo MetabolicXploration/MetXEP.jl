@@ -7,6 +7,7 @@ module MetXEP
     using Reexport
     
     using MetXBase
+    using MetXBase.MassExport
     using MetXOptim
     
     using SparseArrays
@@ -55,6 +56,6 @@ module MetXEP
     #! include .
 
     # exports
-    @_exportall_non_underscore()
+    @exportall_non_underscore()
 
 end
