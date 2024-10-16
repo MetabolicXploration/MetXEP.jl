@@ -26,7 +26,7 @@ const LIN_SOLVER = GLPK.Optimizer
         println()
         
         net0 = pull_net("toy_net")
-        lep = box(net0, LIN_SOLVER)
+        lep = fva_strip(net0, LIN_SOLVER)
         epm = FluxEPModelT0(lep)
         
         for rxn in colids(lep)
@@ -63,7 +63,7 @@ const LIN_SOLVER = GLPK.Optimizer
         biom_id = extras(net0, "BIOM")
         glc_id = extras(net0, "EX_GLC")
         
-        lep = box(net0, LIN_SOLVER; eps = 1e-4)
+        lep = fva_strip(net0, LIN_SOLVER; eps = 1e-4)
         M, N = size(lep)
         Srank = rank(lep.S)
 
@@ -136,7 +136,7 @@ const LIN_SOLVER = GLPK.Optimizer
     let
         model_id = "ecoli_core"
         net0 = pull_net(model_id)
-        lep = box(net0, LIN_SOLVER; eps = 1e-4)
+        lep = fva_strip(net0, LIN_SOLVER; eps = 1e-4)
 
         epm = FluxEPModelT0(lep)
         config!(epm; 
@@ -180,7 +180,7 @@ const LIN_SOLVER = GLPK.Optimizer
         ## ---------------------------------------------
         model_id = "ecoli_core"
         net0 = pull_net(model_id)
-        lep = box(net0, LIN_SOLVER; verbose = false)
+        lep = fva_strip(net0, LIN_SOLVER; verbose = false)
         biom_id = extras(lep, "BIOM") 
         glc_id = extras(lep, "EX_GLC")
         lac_id = "EX_lac__D_e"
@@ -212,7 +212,7 @@ const LIN_SOLVER = GLPK.Optimizer
         ## ---------------------------------------------
         model_id = "ecoli_core"
         net0 = pull_net(model_id)
-        lep = box(net0, LIN_SOLVER; verbose = false)
+        lep = fva_strip(net0, LIN_SOLVER; verbose = false)
         biom_id = extras(lep, "BIOM") 
     
         ## ---------------------------------------------
